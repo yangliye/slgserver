@@ -1,0 +1,71 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+// 设置打包名称
+base {
+    archivesName = 'slg_common'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+dependencies {
+    // SLF4J 日志接口
+    api 'org.slf4j:slf4j-api:2.0.17'
+    
+    // Guava 工具库
+    api 'com.google.guava:guava:33.5.0-jre'
+    
+    // Apache Commons Lang3 - 字符串/对象工具
+    api 'org.apache.commons:commons-lang3:3.20.0'
+    
+    // FastJSON2 - JSON 序列化
+    api 'com.alibaba.fastjson2:fastjson2:2.0.60'
+    
+    // OkHttp - HTTP 客户端 (5.x 需要 Java 8+, 支持 HTTP/2)
+    api 'com.squareup.okhttp3:okhttp:5.3.2'
+    
+    // Dom4j - XML 解析
+    api 'org.dom4j:dom4j:2.1.4'
+    
+    // 测试依赖
+    testImplementation platform('org.junit:junit-bom:5.14.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.27'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// 发布到本地 Maven 仓库
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            
+            pom {
+                name = 'Muyi SLG Common'
+                description = 'SLG 游戏通用工具库'
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version
+        )
+    }
+}

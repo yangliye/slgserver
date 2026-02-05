@@ -12,6 +12,7 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.muyi.common.util.time.TimeUtils;
 import com.muyi.rpc.core.RpcFuture;
 import com.muyi.rpc.core.RpcRequest;
 import com.muyi.rpc.core.RpcResponse;
@@ -113,7 +114,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
      * 处理RPC请求
      */
     private RpcResponse handleRequest(RpcRequest request) {
-        long startTime = System.currentTimeMillis();
+        long startTime = TimeUtils.currentTimeMillis();
         
         try {
             // 获取服务实例
@@ -152,7 +153,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
             
             if (logger.isDebugEnabled()) {
                 logger.debug("Handle request: {} cost {}ms", 
-                        request, System.currentTimeMillis() - startTime);
+                        request, TimeUtils.currentTimeMillis() - startTime);
             }
             
             return RpcResponse.success(request.getRequestId(), result);

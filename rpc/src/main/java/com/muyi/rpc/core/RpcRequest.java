@@ -1,5 +1,7 @@
 package com.muyi.rpc.core;
 
+import com.muyi.common.util.time.TimeUtils;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,7 +43,7 @@ public class RpcRequest implements Serializable {
     
     public RpcRequest() {
         this.requestId = REQUEST_ID_GEN.incrementAndGet();
-        this.timestamp = System.currentTimeMillis();
+        this.timestamp = TimeUtils.currentTimeMillis();
     }
     
     /**

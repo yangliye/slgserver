@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.muyi.common.util.time.TimeUtils;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
@@ -131,9 +133,9 @@ public class ZookeeperServiceRegistry implements ServiceRegistry, ServiceDiscove
         
         // 生成默认服务器ID
         try {
-            this.serverId = InetAddress.getLocalHost().getHostName() + "-" + System.currentTimeMillis();
+            this.serverId = InetAddress.getLocalHost().getHostName() + "-" + TimeUtils.currentTimeMillis();
         } catch (Exception e) {
-            this.serverId = "server-" + System.currentTimeMillis();
+            this.serverId = "server-" + TimeUtils.currentTimeMillis();
         }
         
         // 添加连接状态监听

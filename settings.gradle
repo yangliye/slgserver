@@ -1,5 +1,6 @@
 rootProject.name = 'slgserver'
 
 // 子模块
+include 'common'
 include 'db'
 include 'rpc'

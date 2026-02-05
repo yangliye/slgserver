@@ -1,5 +1,7 @@
 package com.muyi.rpc.registry;
 
+import com.muyi.common.util.time.TimeUtils;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,7 +41,7 @@ public class ServiceInstance implements Serializable {
     private Map<String, String> metadata = new ConcurrentHashMap<>();
     
     public ServiceInstance() {
-        this.registerTime = System.currentTimeMillis();
+        this.registerTime = TimeUtils.currentTimeMillis();
         this.lastHeartbeatTime = this.registerTime;
     }
     

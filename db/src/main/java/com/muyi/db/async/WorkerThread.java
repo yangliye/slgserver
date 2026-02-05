@@ -10,6 +10,8 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.muyi.common.util.time.TimeUtils;
+
 /**
  * 工作线程：每个线程有独立的队列，负责处理分配给它的任务
  * <p>
@@ -265,7 +267,7 @@ public class WorkerThread extends Thread {
      * @return 是否收到毒丸（收到毒丸表示应该退出）
      */
     private boolean collectBatch(List<LandTask> batch) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + landIntervalMs;
+        long deadline = TimeUtils.currentTimeMillis() + landIntervalMs;
         
         // 步骤1：先用 drainTo 非阻塞批量取（高流量时立即取够）
         int needed = batchSize - batch.size();
@@ -284,7 +286,7 @@ public class WorkerThread extends Thread {
         
         // 步骤3：不够的话，阻塞等待剩余时间（低流量时等待新任务）
         while (batch.size() < batchSize) {
-            long remaining = deadline - System.currentTimeMillis();
+            long remaining = deadline - TimeUtils.currentTimeMillis();
             if (remaining <= 0) {
                 break;  // 超时兜底
             }
@@ -315,7 +317,7 @@ public class WorkerThread extends Thread {
      * 使用滞后机制防止在阈值边界频繁切换
      */
     private void adaptiveAdjust() {
-        long now = System.currentTimeMillis();
+        long now = TimeUtils.currentTimeMillis();
         if (now - lastAdjustTime < ADJUST_INTERVAL_MS) {
             return;  // 避免频繁调整
         }

@@ -14,6 +14,9 @@ java {
 }
 
 dependencies {
+    // 通用工具模块
+    api project(':common')
+    
     // Netty - 高性能网络框架
     api 'io.netty:netty-all:4.2.9.Final'
     
@@ -22,28 +25,28 @@ dependencies {
     api 'io.protostuff:protostuff-runtime:1.8.0'
     
     // Objenesis - 对象创建
-    implementation 'org.objenesis:objenesis:3.3'
+    implementation 'org.objenesis:objenesis:3.4'
     
     // SLF4J + Logback 日志
-    api 'org.slf4j:slf4j-api:2.0.9'
-    implementation 'ch.qos.logback:logback-classic:1.4.11'
+    api 'org.slf4j:slf4j-api:2.0.17'
+    implementation 'ch.qos.logback:logback-classic:1.5.27'
     
     // Guava 工具库
-    api 'com.google.guava:guava:32.1.3-jre'
+    api 'com.google.guava:guava:33.5.0-jre'
     
     // Commons Pool2 - 对象池
-    implementation 'org.apache.commons:commons-pool2:2.12.0'
+    implementation 'org.apache.commons:commons-pool2:2.12.1'
     
     // FastJSON2 - 配置解析
-    implementation 'com.alibaba.fastjson2:fastjson2:2.0.42'
+    implementation 'com.alibaba.fastjson2:fastjson2:2.0.60'
     
     // Curator - ZooKeeper客户端框架
-    api 'org.apache.curator:curator-framework:5.5.0'
-    api 'org.apache.curator:curator-recipes:5.5.0'
-    api 'org.apache.curator:curator-x-discovery:5.5.0'
+    api 'org.apache.curator:curator-framework:5.9.0'
+    api 'org.apache.curator:curator-recipes:5.9.0'
+    api 'org.apache.curator:curator-x-discovery:5.9.0'
     
     // 测试依赖
-    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation platform('org.junit:junit-bom:5.14.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

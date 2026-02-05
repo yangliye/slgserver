@@ -1,5 +1,7 @@
 package com.muyi.rpc.core;
 
+import com.muyi.common.util.time.TimeUtils;
+
 import java.io.Serializable;
 
 /**
@@ -33,7 +35,7 @@ public class RpcResponse implements Serializable {
     private long timestamp;
     
     public RpcResponse() {
-        this.timestamp = System.currentTimeMillis();
+        this.timestamp = TimeUtils.currentTimeMillis();
     }
     
     /**

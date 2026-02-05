@@ -1,5 +1,7 @@
 package com.muyi.rpc.core;
 
+import com.muyi.common.util.time.TimeUtils;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -42,7 +44,7 @@ public class RpcFuture implements Future<Object> {
     
     public RpcFuture(long requestId, long timeout) {
         this.requestId = requestId;
-        this.startTime = System.currentTimeMillis();
+        this.startTime = TimeUtils.currentTimeMillis();
         this.timeout = timeout;
     }
     
@@ -229,7 +231,7 @@ public class RpcFuture implements Future<Object> {
      * 检查是否超时
      */
     public boolean isTimeout() {
-        return System.currentTimeMillis() - startTime > timeout;
+        return TimeUtils.currentTimeMillis() - startTime > timeout;
     }
     
     /**

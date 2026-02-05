@@ -14,23 +14,26 @@ java {
 }
 
 dependencies {
-    // 数据库连接池
-    api 'com.zaxxer:HikariCP:5.0.1'
+    // 通用工具模块
+    api project(':common')
     
-    // MySQL 驱动
-    compileOnly 'com.mysql:mysql-connector-j:8.0.33'
+    // 数据库连接池 (7.x 需要 Java 11+)
+    api 'com.zaxxer:HikariCP:6.3.0'
+    
+    // MySQL 驱动 (9.x 需要 Java 8+, 支持 MySQL 8.x/9.x)
+    compileOnly 'com.mysql:mysql-connector-j:9.2.0'
     
     // 高性能集合
-    api 'it.unimi.dsi:fastutil:8.5.12'
+    api 'it.unimi.dsi:fastutil:8.5.15'
     
     // 日志
-    api 'org.slf4j:slf4j-api:2.0.9'
+    api 'org.slf4j:slf4j-api:2.0.17'
     
     // 测试
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
-    testImplementation 'org.slf4j:slf4j-simple:2.0.9'
-    testImplementation 'com.mysql:mysql-connector-j:8.0.33'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.14.1'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.17'
+    testImplementation 'com.mysql:mysql-connector-j:9.2.0'
 }
 
 tasks.withType(Javadoc).configureEach {

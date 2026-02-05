@@ -1,5 +1,6 @@
 package com.muyi.db.async;
 
+import com.muyi.common.util.time.TimeUtils;
 import com.muyi.db.core.BaseEntity;
 
 /**
@@ -31,7 +32,7 @@ public class LandTask {
     public LandTask(BaseEntity<?> entity, TaskType type) {
         this.entity = entity;
         this.type = type;
-        this.createTime = System.currentTimeMillis();
+        this.createTime = TimeUtils.currentTimeMillis();
         this.version = entity.getBusinessVersion();
         this.retryCount = 0;
     }
