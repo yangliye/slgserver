@@ -1,0 +1,102 @@
+---
+description: 开发流程和常用命令
+globs:
+alwaysApply: true
+---
+
+# 开发流程
+
+## 环境要求
+
+- JDK 25+
+- Gradle 9.1 (通过 Wrapper 自动下载)
+- PowerShell (Windows)
+
+## 常用命令
+
+### 构建
+
+```powershell
+# 编译全部（跳过测试）
+.\build.ps1 -SkipTests
+
+# 编译指定模块
+.\build.ps1 -Module common
+.\build.ps1 -Module rpc
+.\build.ps1 -Module db
+
+# 清理并编译
+.\build.ps1 -Clean
+
+# 完整构建（含测试）
+.\build.ps1
+```
+
+### Gradle 命令
+
+```powershell
+# 编译
+.\gradlew compileJava
+
+# 运行测试
+.\gradlew :common:test
+.\gradlew :rpc:test
+.\gradlew :db:test
+
+# 发布到本地 Maven
+.\gradlew publishToMavenLocal
+
+# 刷新依赖
+.\gradlew --refresh-dependencies
+
+# 查看依赖树
+.\gradlew :common:dependencies
+```
+
+### Git 操作
+
+```powershell
+# 查看状态
+git status
+
+# 提交并推送
+git add -A
+git commit -m "feat: description"
+git push origin main
+```
+
+## 临时脚本规范
+
+- **存放位置**: `D:\workspace\cursor` 目录
+- **优先语言**: Go（不用 Python）
+- **命名规范**: 描述性名称，如 `gen_proto.go`
+
+## 测试规范
+
+- 每个工具类对应一个测试类
+- 测试文件位置：`src/test/java/` 对应目录
+- 使用 JUnit 5
+
+```java
+@Test
+void testMethodName() {
+    // Given
+    // When
+    // Then
+}
+```
+
+## 依赖管理
+
+- 定期检查依赖更新
+- 新增依赖使用最新稳定版本
+- 大版本升级需验证兼容性
+
+当前依赖版本（2026-02）：
+- slf4j: 2.0.17
+- guava: 33.5.0-jre
+- fastjson2: 2.0.60
+- okhttp: 5.3.2
+- netty: 4.2.9.Final
+- HikariCP: 6.3.0
+- curator: 5.9.0

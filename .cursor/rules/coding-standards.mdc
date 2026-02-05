@@ -1,0 +1,84 @@
+---
+description: 代码规范和编码约定
+globs:
+  - "**/*.java"
+alwaysApply: true
+---
+
+# 代码规范
+
+## 强制规则
+
+### 1. 禁止使用 System.currentTimeMillis()
+- 全局只有 `TimeUtils.java` 允许使用 `System.currentTimeMillis()`
+- 其他所有地方必须使用 `TimeUtils.currentTimeMillis()`
+- 原因：便于时间偏移测试、模拟游戏时间
+
+```java
+// ❌ 错误
+long now = System.currentTimeMillis();
+
+// ✅ 正确
+long now = TimeUtils.currentTimeMillis();
+```
+
+### 2. 禁止使用内部类
+- 所有内部类（inner class）必须提取为独立的类文件
+- 静态内部类用于单例模式除外（如 Holder 模式）
+
+```java
+// ❌ 错误 - 内部类
+public class PlayerService {
+    private class PlayerHandler { }  // 不允许
+}
+
+// ✅ 正确 - 独立文件
+// PlayerHandler.java
+public class PlayerHandler { }
+```
+
+### 3. 方法调用前必须确认存在
+- 调用方法前必须先 grep 确认方法名存在
+- 不凭推测假设，特别是 Protobuf 等生成的类
+- 避免编译错误和运行时异常
+
+```java
+// 调用前先确认：
+// grep "getPlayerId" src/main/java/
+player.getPlayerId();  // 确认存在后再使用
+```
+
+## 命名规范
+
+### 包结构
+```
+com.muyi.{module}.{feature}
+  ├── core/       # 核心类
+  ├── util/       # 工具类
+  ├── config/     # 配置类
+  ├── handler/    # 处理器
+  └── exception/  # 异常类
+```
+
+### 类命名
+- 工具类：`XxxUtils` 或 `XxxUtil`
+- 管理器：`XxxManager`
+- 处理器：`XxxHandler`
+- 配置类：`XxxConfig`
+- 实体类：`XxxEntity` 或直接名词
+
+## 日志规范
+
+```java
+// 使用 SLF4J
+private static final Logger log = LoggerFactory.getLogger(MyClass.class);
+
+// 使用占位符，不要字符串拼接
+log.info("Player {} login, level: {}", playerId, level);
+```
+
+## 异常处理
+
+- 业务异常使用自定义异常类
+- 不要吞掉异常，至少要记录日志
+- 资源使用 try-with-resources 自动关闭

@@ -1,0 +1,80 @@
+---
+description: 项目概述和架构说明
+globs:
+alwaysApply: true
+---
+
+# SLG Server 项目概述
+
+## 项目简介
+
+这是一个 **SLG（策略类）游戏服务器框架**，专注于高性能、低延迟的游戏服务端开发。
+
+- **GitHub**: https://github.com/yangliye/slgserver
+- **开发阶段**: 开发设计中，不需要向下兼容
+
+## 技术栈
+
+| 组件 | 技术 | 版本 |
+|-----|-----|-----|
+| JDK | Java | 25 |
+| 构建 | Gradle | 9.1 |
+| 网络 | Netty | 4.2.9.Final |
+| 序列化 | Protostuff | 1.8.0 |
+| 服务发现 | Curator/ZooKeeper | 5.9.0 |
+| 连接池 | HikariCP | 6.3.0 |
+| JSON | FastJSON2 | 2.0.60 |
+| HTTP | OkHttp | 5.3.2 |
+| 日志 | SLF4J + Logback | 2.0.17 / 1.5.27 |
+
+## 模块结构
+
+```
+slgserver/
+├── common/          # 通用工具库
+│   └── util/
+│       ├── core/    # 核心工具 (StringUtil, MathUtils, RandomUtils, CollectionUtils, BitUtils)
+│       ├── time/    # 时间工具 (TimeUtils)
+│       ├── codec/   # 编解码 (JsonUtils, XmlUtils, CryptoUtils)
+│       ├── net/     # 网络工具 (HttpUtils)
+│       └── id/      # ID生成 (IdGenerator)
+│
+├── rpc/             # RPC 框架
+│   ├── core/        # 核心类 (RpcRequest, RpcResponse, RpcFuture)
+│   ├── client/      # 客户端 (RpcClient, ChannelPool)
+│   ├── server/      # 服务端 (RpcServer, ServerHandler)
+│   ├── registry/    # 服务注册 (ZookeeperServiceRegistry)
+│   └── transport/   # 传输层 (TransportType, Codec)
+│
+├── db/              # 数据库框架
+│   ├── core/        # 核心类 (BaseEntity, EntityMetadata)
+│   ├── async/       # 异步落地 (AsyncLandManager, WorkerThread)
+│   ├── sql/         # SQL操作 (SqlBuilder, SqlExecutor)
+│   └── config/      # 配置 (DbConfig)
+│
+└── build.ps1        # PowerShell 打包脚本
+```
+
+## 核心设计
+
+### IdGenerator (ID 生成器)
+- **算法**: Snowflake 变体
+- **结构**: 41位时间戳 + 12位serverId + 10位序列号
+- **服务器容量**: 4096 台 (12位 = 2^12)
+- **每毫秒容量**: 1024 个ID (10位 = 2^10)
+
+### TimeUtils (时间工具)
+- 支持时间偏移，便于测试
+- 所有业务代码使用 `TimeUtils.currentTimeMillis()`
+- 提供 SLG 常用时间计算（周几、月初、服务器天数等）
+
+### RPC 框架
+- 基于 Netty 的高性能 RPC
+- Protostuff 序列化（比 JSON 快 10 倍）
+- ZooKeeper 服务注册与发现
+- 连接池管理 + 时间轮超时检测
+
+### DB 框架
+- 异步批量落地（提高吞吐量）
+- 变更追踪（只写入变化的字段）
+- 自适应调节（根据负载动态调整）
