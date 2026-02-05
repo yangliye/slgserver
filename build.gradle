@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'idea'
+}
+
+// 所有子项目通用配置
+allprojects {
+    group = 'com.muyi'
+    version = '1.0.0'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+// 子项目通用配置
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-g:source,lines,vars']
+        options.compilerArgs += ['-Xlint:-deprecation']  // 抑制过时API警告(Netty 4.2.x)
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+// 根项目不需要编译
+jar.enabled = false

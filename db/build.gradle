@@ -1,0 +1,65 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+// 设置打包名称
+base {
+    archivesName = 'slg_db'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+dependencies {
+    // 数据库连接池
+    api 'com.zaxxer:HikariCP:5.0.1'
+    
+    // MySQL 驱动
+    compileOnly 'com.mysql:mysql-connector-j:8.0.33'
+    
+    // 高性能集合
+    api 'it.unimi.dsi:fastutil:8.5.12'
+    
+    // 日志
+    api 'org.slf4j:slf4j-api:2.0.9'
+    
+    // 测试
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.9'
+    testImplementation 'com.mysql:mysql-connector-j:8.0.33'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// 发布到本地 Maven 仓库
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            
+            pom {
+                name = 'Muyi Game Database Framework'
+                description = '高性能游戏数据库框架，支持异步落地、变更追踪、内存缓存'
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version
+        )
+    }
+}

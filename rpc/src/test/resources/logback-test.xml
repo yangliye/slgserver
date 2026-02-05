@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 关闭 GameServiceImpl 的 INFO 日志，减少输出 -->
+    <logger name="com.muyi.rpc.game.GameServiceImpl" level="WARN"/>
+    <logger name="com.muyi.rpc.world.WorldServiceImpl" level="WARN"/>
+    
+    <!-- ZooKeeper 日志也降级 -->
+    <logger name="org.apache.zookeeper" level="WARN"/>
+    <logger name="org.apache.curator" level="WARN"/>
+    
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
