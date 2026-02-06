@@ -17,53 +17,49 @@ database:
 
 # 游戏配置模块设置
 gameconfig:
-  # 配置文件根目录
   configRoot: serverconfig/gamedata
-  # 配置类扫描包名（根据实际业务包名设置）
   configPackage: com.muyi.gameconfig.entity
 
 # ==================== 实例配置 ====================
-# 每个实例独立配置，支持同一台机器启动多个实例
+# 启动时加载所有实例，gameconfig 自动在最前面加载一次
 instances:
-  # Login 服务器
-  - name: login-1
-    modules:
-      - login
+  - module: login
     serverId: 1
     rpcPort: 10001
     webPort: 18001
 
-  # Gate 服务器
-  - name: gate-1
-    modules:
-      - gate
+  - module: gate
     serverId: 1
     rpcPort: 10002
     webPort: 18002
 
-  # Game 服务器（需要 gameconfig）
-  - name: game-1
-    modules:
-      - gameconfig
-      - game
+  - module: game
     serverId: 1
     rpcPort: 10003
     webPort: 18003
 
-  # World 服务器（需要 gameconfig）
-  - name: world-1
-    modules:
-      - gameconfig
-      - world
+  - module: world
     serverId: 1
     rpcPort: 10004
     webPort: 18004
 
-  # Alliance 服务器（需要 gameconfig）
-  - name: alliance-1
-    modules:
-      - gameconfig
-      - alliance
+  - module: alliance
     serverId: 1
     rpcPort: 10005
     webPort: 18005
+
+  # 第二组服务器
+  - module: game
+    serverId: 2
+    rpcPort: 10013
+    webPort: 18013
+
+  - module: world
+    serverId: 2
+    rpcPort: 10014
+    webPort: 18014
+
+  - module: alliance
+    serverId: 2
+    rpcPort: 10015
+    webPort: 18015

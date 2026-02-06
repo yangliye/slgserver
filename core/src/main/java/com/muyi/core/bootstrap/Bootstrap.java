@@ -8,14 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 服务器启动器
- * 根据实例配置启动指定的模块
+ * 启动配置中定义的所有实例
  *
  * @author muyi
  */
@@ -24,27 +23,15 @@ public class Bootstrap {
     private static final Logger log = LoggerFactory.getLogger(Bootstrap.class);
     
     private final ServerConfig serverConfig;
-    private final InstanceConfig instanceConfig;
     private final ModuleRegistry registry;
-    private final List<GameModule> startedModules = new ArrayList<>();
+    private final List<StartedModule> startedModules = new ArrayList<>();
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     
-    /**
-     * 创建启动器
-     * 
-     * @param serverConfig 服务器配置
-     * @param instanceName 要启动的实例名称
-     */
-    public Bootstrap(ServerConfig serverConfig, String instanceName) {
+    public Bootstrap(ServerConfig serverConfig) {
         this.serverConfig = serverConfig;
-        this.instanceConfig = serverConfig.getInstance(instanceName);
         this.registry = ModuleRegistry.getInstance();
-        
-        if (this.instanceConfig == null) {
-            throw new IllegalArgumentException("Instance not found: " + instanceName);
-        }
     }
     
     /**
@@ -58,47 +45,20 @@ public class Bootstrap {
         
         log.info("========================================");
         log.info("  SLG Server Starting...");
-        log.info("  Instance: {}", instanceConfig.name);
-        log.info("  Server ID: {}", instanceConfig.serverId);
-        log.info("  Modules: {}", instanceConfig.modules);
+        log.info("  Instances: {}", serverConfig.getInstances().size());
         log.info("========================================");
         
         // 通过 SPI 发现模块
         registry.discoverModules();
         
-        // 获取要启动的模块列表
-        List<GameModule> modulesToStart = getModulesToStart();
-        if (modulesToStart.isEmpty()) {
-            log.warn("No modules to start");
-            running.set(false);
-            return;
+        // 1. 先启动 gameconfig（如果需要）
+        if (serverConfig.needsGameConfig()) {
+            startGameConfig();
         }
         
-        // 按优先级排序
-        modulesToStart.sort(Comparator.comparingInt(GameModule::priority));
-        
-        log.info("Modules to start (ordered): {}", 
-                modulesToStart.stream().map(m -> m.name() + "(" + m.priority() + ")").toList());
-        
-        // 初始化并启动模块
-        for (GameModule module : modulesToStart) {
-            try {
-                ModuleConfig moduleConfig = serverConfig.getModuleConfig(instanceConfig, module.name());
-                
-                log.info("Initializing module: {}", module.name());
-                module.init(moduleConfig);
-                
-                log.info("Starting module: {}", module.name());
-                module.start();
-                
-                startedModules.add(module);
-            } catch (Exception e) {
-                log.error("Failed to start module: {}", module.name(), e);
-                // 启动失败，重置状态并停止已启动的模块
-                running.set(false);
-                doShutdown();
-                throw e;
-            }
+        // 2. 启动所有业务实例
+        for (InstanceConfig instance : serverConfig.getInstances()) {
+            startInstance(instance);
         }
         
         // 注册 Shutdown Hook
@@ -109,9 +69,56 @@ public class Bootstrap {
         
         log.info("========================================");
         log.info("  SLG Server Started Successfully!");
-        log.info("  Instance: {}", instanceConfig.name);
-        log.info("  Started modules: {}", startedModules.stream().map(GameModule::name).toList());
+        log.info("  Started: {}", startedModules.stream().map(m -> m.instanceId).toList());
         log.info("========================================");
+    }
+    
+    /**
+     * 启动 gameconfig 模块
+     */
+    private void startGameConfig() throws Exception {
+        GameModule module = registry.get("gameconfig");
+        if (module == null) {
+            log.warn("gameconfig module not found in registry");
+            return;
+        }
+        
+        ModuleConfig config = serverConfig.getGameConfigModuleConfig();
+        
+        log.info("Initializing gameconfig...");
+        module.init(config);
+        
+        log.info("Starting gameconfig...");
+        module.start();
+        
+        startedModules.add(new StartedModule("gameconfig", module));
+        log.info("gameconfig started");
+    }
+    
+    /**
+     * 启动单个实例
+     */
+    private void startInstance(InstanceConfig instance) throws Exception {
+        GameModule module = registry.get(instance.module);
+        if (module == null) {
+            log.warn("Module not found: {}", instance.module);
+            return;
+        }
+        
+        // 为每个实例创建新的模块实例
+        GameModule moduleInstance = module.getClass().getDeclaredConstructor().newInstance();
+        ModuleConfig config = serverConfig.getModuleConfig(instance);
+        
+        String instanceId = instance.getInstanceId();
+        
+        log.info("Initializing {}...", instanceId);
+        moduleInstance.init(config);
+        
+        log.info("Starting {}...", instanceId);
+        moduleInstance.start();
+        
+        startedModules.add(new StartedModule(instanceId, moduleInstance));
+        log.info("{} started (rpc={}, web={})", instanceId, instance.rpcPort, instance.webPort);
     }
     
     /**
@@ -132,22 +139,21 @@ public class Bootstrap {
     }
     
     /**
-     * 执行关闭逻辑（内部方法）
+     * 执行关闭逻辑
      */
     private void doShutdown() {
         log.info("========================================");
         log.info("  SLG Server Shutting down...");
-        log.info("  Instance: {}", instanceConfig.name);
         log.info("========================================");
         
         // 逆序停止模块
         for (int i = startedModules.size() - 1; i >= 0; i--) {
-            GameModule module = startedModules.get(i);
+            StartedModule started = startedModules.get(i);
             try {
-                log.info("Stopping module: {}", module.name());
-                module.stop();
+                log.info("Stopping {}...", started.instanceId);
+                started.module.stop();
             } catch (Exception e) {
-                log.error("Error stopping module: {}", module.name(), e);
+                log.error("Error stopping {}", started.instanceId, e);
             }
         }
         
@@ -158,24 +164,6 @@ public class Bootstrap {
         log.info("========================================");
         
         shutdownLatch.countDown();
-    }
-    
-    /**
-     * 获取要启动的模块列表
-     */
-    private List<GameModule> getModulesToStart() {
-        List<GameModule> result = new ArrayList<>();
-        
-        for (String moduleName : instanceConfig.modules) {
-            GameModule module = registry.get(moduleName);
-            if (module != null) {
-                result.add(module);
-            } else {
-                log.warn("Module not found: {}", moduleName);
-            }
-        }
-        
-        return result;
     }
     
     /**
@@ -193,13 +181,6 @@ public class Bootstrap {
     }
     
     /**
-     * 获取实例配置
-     */
-    public InstanceConfig getInstanceConfig() {
-        return instanceConfig;
-    }
-    
-    /**
      * 获取模块注册中心
      */
     public ModuleRegistry getRegistry() {
@@ -207,10 +188,16 @@ public class Bootstrap {
     }
     
     /**
-     * 获取已启动的模块
+     * 已启动的模块信息
      */
-    public List<GameModule> getStartedModules() {
-        return new ArrayList<>(startedModules);
+    private static class StartedModule {
+        final String instanceId;
+        final GameModule module;
+        
+        StartedModule(String instanceId, GameModule module) {
+            this.instanceId = instanceId;
+            this.module = module;
+        }
     }
     
     // ==================== 静态入口 ====================
@@ -219,40 +206,24 @@ public class Bootstrap {
      * 命令行启动入口
      * 
      * 用法:
-     *   java -jar slgserver.jar --instance=game-1
-     *   java -jar slgserver.jar --config=xxx.yaml --instance=login-1
+     *   java -jar slgserver.jar
+     *   java -jar slgserver.jar --config=xxx.yaml
      */
     public static void main(String[] args) {
         try {
-            String configPath = null;
-            String instanceName = null;
+            String configPath = "serverconfig/server.yaml";
             
             for (String arg : args) {
                 if (arg.startsWith("--config=")) {
                     configPath = arg.substring("--config=".length());
-                } else if (arg.startsWith("--instance=")) {
-                    instanceName = arg.substring("--instance=".length());
                 }
             }
             
-            if (instanceName == null) {
-                System.err.println("Usage: java -jar slgserver.jar --instance=<name> [--config=<path>]");
-                System.err.println("  --instance=<name>  Instance name to start (required)");
-                System.err.println("  --config=<path>    Config file path (default: serverconfig/server.yaml)");
-                System.exit(1);
-                return;
-            }
-            
             // 加载配置
-            ServerConfig config;
-            if (configPath != null) {
-                config = ServerConfig.load(configPath);
-            } else {
-                config = ServerConfig.load("serverconfig/server.yaml");
-            }
+            ServerConfig config = ServerConfig.load(configPath);
             
             // 启动
-            Bootstrap bootstrap = new Bootstrap(config, instanceName);
+            Bootstrap bootstrap = new Bootstrap(config);
             bootstrap.start();
             bootstrap.awaitShutdown();
             

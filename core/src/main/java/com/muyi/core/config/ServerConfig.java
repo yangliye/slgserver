@@ -13,7 +13,7 @@ import java.util.Map;
  * 服务器配置
  * 从 YAML 文件加载配置
  * 
- * 基于实例配置，每个实例独立指定要启动的模块列表
+ * 启动时加载所有实例，每个实例一个模块
  *
  * @author muyi
  */
@@ -95,16 +95,10 @@ public class ServerConfig {
         if (instancesData != null) {
             for (Map<String, Object> instData : instancesData) {
                 InstanceConfig inst = new InstanceConfig();
-                inst.name = (String) instData.get("name");
+                inst.module = (String) instData.get("module");
                 inst.serverId = ((Number) instData.getOrDefault("serverId", 1)).intValue();
                 inst.rpcPort = ((Number) instData.getOrDefault("rpcPort", 0)).intValue();
                 inst.webPort = ((Number) instData.getOrDefault("webPort", 0)).intValue();
-                
-                // 模块列表
-                Object modulesObj = instData.get("modules");
-                if (modulesObj instanceof List) {
-                    inst.modules = (List<String>) modulesObj;
-                }
                 
                 // 扩展配置
                 Map<String, Object> extraData = (Map<String, Object>) instData.get("extra");
@@ -125,25 +119,10 @@ public class ServerConfig {
     }
     
     /**
-     * 根据实例名称获取实例配置
-     */
-    public InstanceConfig getInstance(String name) {
-        for (InstanceConfig inst : instances) {
-            if (inst.name.equals(name)) {
-                return inst;
-            }
-        }
-        return null;
-    }
-    
-    /**
      * 根据实例配置生成模块配置
-     * 
-     * @param instance 实例配置
-     * @param moduleName 模块名称
      */
-    public ModuleConfig getModuleConfig(InstanceConfig instance, String moduleName) {
-        ModuleConfig moduleConfig = new ModuleConfig()
+    public ModuleConfig getModuleConfig(InstanceConfig instance) {
+        return new ModuleConfig()
                 .serverId(instance.serverId)
                 .host(host)
                 .rpcPort(instance.rpcPort)
@@ -153,18 +132,31 @@ public class ServerConfig {
                 .jdbcUrl(jdbcUrl)
                 .jdbcUser(jdbcUser)
                 .jdbcPassword(jdbcPassword)
-                .extra("instanceName", instance.name)
                 .extras(instance.extra);
-        
-        // gameconfig 模块的特殊配置
-        if ("gameconfig".equals(moduleName)) {
-            moduleConfig.extra("configRoot", configRoot);
-            if (configPackage != null) {
-                moduleConfig.extra("configPackage", configPackage);
+    }
+    
+    /**
+     * 获取 gameconfig 模块的配置
+     */
+    public ModuleConfig getGameConfigModuleConfig() {
+        return new ModuleConfig()
+                .zkAddress(zkAddress)
+                .redisAddress(redisAddress)
+                .extra("configRoot", configRoot)
+                .extra("configPackage", configPackage);
+    }
+    
+    /**
+     * 是否需要加载 gameconfig 模块
+     * 当实例中包含 game/world/alliance 时需要
+     */
+    public boolean needsGameConfig() {
+        for (InstanceConfig inst : instances) {
+            if ("game".equals(inst.module) || "world".equals(inst.module) || "alliance".equals(inst.module)) {
+                return true;
             }
         }
-        
-        return moduleConfig;
+        return false;
     }
     
     // ==================== Getter/Setter ====================
@@ -217,11 +209,8 @@ public class ServerConfig {
      * 实例配置
      */
     public static class InstanceConfig {
-        /** 实例名称（唯一标识） */
-        public String name;
-        
-        /** 要启动的模块列表 */
-        public List<String> modules = new ArrayList<>();
+        /** 模块名称 */
+        public String module;
         
         /** 服务器ID */
         public int serverId;
@@ -238,15 +227,16 @@ public class ServerConfig {
         public InstanceConfig() {
         }
         
+        /**
+         * 获取实例唯一标识
+         */
+        public String getInstanceId() {
+            return module + "-" + serverId;
+        }
+        
         @Override
         public String toString() {
-            return "InstanceConfig{" +
-                    "name='" + name + '\'' +
-                    ", modules=" + modules +
-                    ", serverId=" + serverId +
-                    ", rpcPort=" + rpcPort +
-                    ", webPort=" + webPort +
-                    '}';
+            return module + "-" + serverId + "(rpc=" + rpcPort + ", web=" + webPort + ")";
         }
     }
 }
