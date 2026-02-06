@@ -13,10 +13,7 @@ import java.util.Map;
  * 服务器配置
  * 从 YAML 文件加载配置
  * 
- * 支持三种启动模式：
- * - all: 全部模块各启动一个实例
- * - single: 只启动指定的单个模块
- * - instance: 按 instances 配置启动多实例
+ * 基于实例配置，每个实例独立指定要启动的模块列表
  *
  * @author muyi
  */
@@ -27,17 +24,8 @@ public class ServerConfig {
         return new Yaml();
     }
     
-    /** 启动模式：all=全部模块, single=单模块, instance=多实例 */
-    private String mode = "all";
-    
-    /** 服务器ID */
-    private int serverId = 1;
-    
     /** 主机地址 */
     private String host;
-    
-    /** 要启动的模块列表 */
-    private List<String> modules = new ArrayList<>();
     
     /** ZooKeeper 地址 */
     private String zkAddress = "127.0.0.1:2181";
@@ -50,10 +38,7 @@ public class ServerConfig {
     private String jdbcUser;
     private String jdbcPassword;
     
-    /** 各模块端口配置 */
-    private Map<String, PortConfig> ports = new HashMap<>();
-    
-    /** 多实例配置列表 */
+    /** 实例配置列表 */
     private List<InstanceConfig> instances = new ArrayList<>();
     
     /** 游戏配置模块设置 */
@@ -90,16 +75,9 @@ public class ServerConfig {
     private static ServerConfig parse(Map<String, Object> data) {
         ServerConfig config = new ServerConfig();
         
+        // 服务器基础配置
         Map<String, Object> server = (Map<String, Object>) data.getOrDefault("server", new HashMap<>());
-        
-        config.mode = (String) server.getOrDefault("mode", "all");
-        config.serverId = ((Number) server.getOrDefault("serverId", 1)).intValue();
         config.host = (String) server.get("host");
-        
-        Object modulesObj = server.get("modules");
-        if (modulesObj instanceof List) {
-            config.modules = (List<String>) modulesObj;
-        }
         
         // 基础设施配置
         Map<String, Object> infra = (Map<String, Object>) data.getOrDefault("infrastructure", new HashMap<>());
@@ -112,34 +90,23 @@ public class ServerConfig {
         config.jdbcUser = (String) db.get("user");
         config.jdbcPassword = (String) db.get("password");
         
-        // 端口配置
-        Map<String, Object> portsData = (Map<String, Object>) data.getOrDefault("ports", new HashMap<>());
-        for (Map.Entry<String, Object> entry : portsData.entrySet()) {
-            Map<String, Object> portData = (Map<String, Object>) entry.getValue();
-            PortConfig portConfig = new PortConfig();
-            portConfig.rpcPort = ((Number) portData.getOrDefault("rpc", 0)).intValue();
-            portConfig.webPort = ((Number) portData.getOrDefault("web", 0)).intValue();
-            config.ports.put(entry.getKey(), portConfig);
-        }
-        
-        // 默认端口配置
-        config.ports.putIfAbsent("login", new PortConfig(10001, 18001));
-        config.ports.putIfAbsent("gate", new PortConfig(10002, 18002));
-        config.ports.putIfAbsent("game", new PortConfig(10003, 18003));
-        config.ports.putIfAbsent("world", new PortConfig(10004, 18004));
-        config.ports.putIfAbsent("alliance", new PortConfig(10005, 18005));
-        
-        // 多实例配置
+        // 实例配置
         List<Map<String, Object>> instancesData = (List<Map<String, Object>>) data.get("instances");
         if (instancesData != null) {
             for (Map<String, Object> instData : instancesData) {
                 InstanceConfig inst = new InstanceConfig();
                 inst.name = (String) instData.get("name");
-                inst.module = (String) instData.get("module");
                 inst.serverId = ((Number) instData.getOrDefault("serverId", 1)).intValue();
                 inst.rpcPort = ((Number) instData.getOrDefault("rpcPort", 0)).intValue();
                 inst.webPort = ((Number) instData.getOrDefault("webPort", 0)).intValue();
                 
+                // 模块列表
+                Object modulesObj = instData.get("modules");
+                if (modulesObj instanceof List) {
+                    inst.modules = (List<String>) modulesObj;
+                }
+                
+                // 扩展配置
                 Map<String, Object> extraData = (Map<String, Object>) instData.get("extra");
                 if (extraData != null) {
                     inst.extra.putAll(extraData);
@@ -158,21 +125,36 @@ public class ServerConfig {
     }
     
     /**
-     * 获取模块配置
+     * 根据实例名称获取实例配置
      */
-    public ModuleConfig getModuleConfig(String moduleName) {
-        PortConfig portConfig = ports.getOrDefault(moduleName, new PortConfig());
-        
+    public InstanceConfig getInstance(String name) {
+        for (InstanceConfig inst : instances) {
+            if (inst.name.equals(name)) {
+                return inst;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 根据实例配置生成模块配置
+     * 
+     * @param instance 实例配置
+     * @param moduleName 模块名称
+     */
+    public ModuleConfig getModuleConfig(InstanceConfig instance, String moduleName) {
         ModuleConfig moduleConfig = new ModuleConfig()
-                .serverId(serverId)
+                .serverId(instance.serverId)
                 .host(host)
-                .rpcPort(portConfig.rpcPort)
-                .webPort(portConfig.webPort)
+                .rpcPort(instance.rpcPort)
+                .webPort(instance.webPort)
                 .zkAddress(zkAddress)
                 .redisAddress(redisAddress)
                 .jdbcUrl(jdbcUrl)
                 .jdbcUser(jdbcUser)
-                .jdbcPassword(jdbcPassword);
+                .jdbcPassword(jdbcPassword)
+                .extra("instanceName", instance.name)
+                .extras(instance.extra);
         
         // gameconfig 模块的特殊配置
         if ("gameconfig".equals(moduleName)) {
@@ -185,62 +167,7 @@ public class ServerConfig {
         return moduleConfig;
     }
     
-    /**
-     * 是否启用全部模块
-     */
-    public boolean isAllModules() {
-        return "all".equalsIgnoreCase(mode);
-    }
-    
-    /**
-     * 是否是多实例模式
-     */
-    public boolean isInstanceMode() {
-        return "instance".equalsIgnoreCase(mode);
-    }
-    
-    /**
-     * 获取实例配置列表
-     */
-    public List<InstanceConfig> getInstances() {
-        return instances;
-    }
-    
-    /**
-     * 根据实例配置生成 ModuleConfig
-     */
-    public ModuleConfig getModuleConfig(InstanceConfig instance) {
-        return new ModuleConfig()
-                .serverId(instance.serverId)
-                .host(host)
-                .rpcPort(instance.rpcPort)
-                .webPort(instance.webPort)
-                .zkAddress(zkAddress)
-                .redisAddress(redisAddress)
-                .jdbcUrl(jdbcUrl)
-                .jdbcUser(jdbcUser)
-                .jdbcPassword(jdbcPassword)
-                .extra("instanceName", instance.name)
-                .extras(instance.extra);
-    }
-    
     // ==================== Getter/Setter ====================
-    
-    public String getMode() {
-        return mode;
-    }
-    
-    public void setMode(String mode) {
-        this.mode = mode;
-    }
-    
-    public int getServerId() {
-        return serverId;
-    }
-    
-    public void setServerId(int serverId) {
-        this.serverId = serverId;
-    }
     
     public String getHost() {
         return host;
@@ -248,14 +175,6 @@ public class ServerConfig {
     
     public void setHost(String host) {
         this.host = host;
-    }
-    
-    public List<String> getModules() {
-        return modules;
-    }
-    
-    public void setModules(List<String> modules) {
-        this.modules = modules;
     }
     
     public String getZkAddress() {
@@ -290,31 +209,19 @@ public class ServerConfig {
         this.configPackage = configPackage;
     }
     
-    /**
-     * 端口配置
-     */
-    public static class PortConfig {
-        public int rpcPort;
-        public int webPort;
-        
-        public PortConfig() {
-        }
-        
-        public PortConfig(int rpcPort, int webPort) {
-            this.rpcPort = rpcPort;
-            this.webPort = webPort;
-        }
+    public List<InstanceConfig> getInstances() {
+        return instances;
     }
     
     /**
-     * 实例配置（多实例模式）
+     * 实例配置
      */
     public static class InstanceConfig {
-        /** 实例名称 */
+        /** 实例名称（唯一标识） */
         public String name;
         
-        /** 模块类型 */
-        public String module;
+        /** 要启动的模块列表 */
+        public List<String> modules = new ArrayList<>();
         
         /** 服务器ID */
         public int serverId;
@@ -335,7 +242,7 @@ public class ServerConfig {
         public String toString() {
             return "InstanceConfig{" +
                     "name='" + name + '\'' +
-                    ", module='" + module + '\'' +
+                    ", modules=" + modules +
                     ", serverId=" + serverId +
                     ", rpcPort=" + rpcPort +
                     ", webPort=" + webPort +

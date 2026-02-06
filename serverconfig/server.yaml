@@ -1,25 +1,8 @@
 # SLG Server 配置文件
 
 server:
-  # 启动模式: 
-  #   all      = 全部模块各启动一个实例
-  #   single   = 只启动指定的单个模块
-  #   instance = 按 instances 配置启动多实例
-  mode: all
-  
-  # 默认服务器ID（mode=all/single 时使用）
-  serverId: 1
-  
   # 主机地址（用于 RPC 注册，为空则自动获取本机 IP）
   host: 
-  
-  # 要启动的模块列表（mode=all 时为全部，mode=single 时指定）
-  modules:
-    - login
-    - gate
-    - game
-    - world
-    - alliance
 
 # 基础设施配置
 infrastructure:
@@ -32,56 +15,55 @@ database:
   user: root
   password: 123456
 
-# 游戏配置模块（可选，仅 game/world/alliance 等需要配置的模块使用）
-# login/gate 单独部署时无需此配置
+# 游戏配置模块设置
 gameconfig:
   # 配置文件根目录
   configRoot: serverconfig/gamedata
   # 配置类扫描包名（根据实际业务包名设置）
   configPackage: com.muyi.gameconfig.entity
 
-# ==================== 默认端口配置（mode=all/single 时使用）====================
-ports:
-  login:
-    rpc: 10001
-    web: 18001
-  gate:
-    rpc: 10002
-    web: 18002
-  game:
-    rpc: 10003
-    web: 18003
-  world:
-    rpc: 10004
-    web: 18004
-  alliance:
-    rpc: 10005
-    web: 18005
-
-# ==================== 多实例配置（mode=instance 时使用）====================
-# 支持同一台机器启动多个 game/world 实例
+# ==================== 实例配置 ====================
+# 每个实例独立配置，支持同一台机器启动多个实例
 instances:
-  # 示例：启动2个游戏服 + 1个世界服
-  # - name: game-1
-  #   module: game
-  #   serverId: 1
-  #   rpcPort: 10003
-  #   webPort: 18003
-  #   extra:
-  #     maxPlayers: 5000
-  #
-  # - name: game-2
-  #   module: game
-  #   serverId: 2
-  #   rpcPort: 10013
-  #   webPort: 18013
-  #   extra:
-  #     maxPlayers: 5000
-  #
-  # - name: world-1
-  #   module: world
-  #   serverId: 1
-  #   rpcPort: 10004
-  #   webPort: 18004
-  #   extra:
-  #     mapSize: 200
+  # Login 服务器
+  - name: login-1
+    modules:
+      - login
+    serverId: 1
+    rpcPort: 10001
+    webPort: 18001
+
+  # Gate 服务器
+  - name: gate-1
+    modules:
+      - gate
+    serverId: 1
+    rpcPort: 10002
+    webPort: 18002
+
+  # Game 服务器（需要 gameconfig）
+  - name: game-1
+    modules:
+      - gameconfig
+      - game
+    serverId: 1
+    rpcPort: 10003
+    webPort: 18003
+
+  # World 服务器（需要 gameconfig）
+  - name: world-1
+    modules:
+      - gameconfig
+      - world
+    serverId: 1
+    rpcPort: 10004
+    webPort: 18004
+
+  # Alliance 服务器（需要 gameconfig）
+  - name: alliance-1
+    modules:
+      - gameconfig
+      - alliance
+    serverId: 1
+    rpcPort: 10005
+    webPort: 18005
