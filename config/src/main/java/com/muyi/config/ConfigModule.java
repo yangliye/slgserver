@@ -6,14 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ????
- * ????????????????
+ * 配置模块
+ * 负责加载策划配置数据，可插拔部署
  * 
- * ???? -1000??????????????
+ * 优先级为 -1000，确保在所有业务模块之前启动
  * 
- * ?????? ModuleConfig.extra??
- * - configRoot: ?????????? "serverconfig/gamedata"
- * - configPackage: ????????? "com.muyi.game.config"
+ * 配置项（通过 ModuleConfig.extra）：
+ * - configRoot: 配置文件根目录，默认 "serverconfig/gamedata"
+ * - configPackage: 配置类扫描包名，如 "com.muyi.game.config"
  *
  * @author muyi
  */
@@ -34,7 +34,7 @@ public class ConfigModule implements GameModule {
     
     @Override
     public int priority() {
-        // ???????????????????
+        // 负数优先级，确保在所有业务模块之前启动
         return -1000;
     }
     
@@ -42,7 +42,7 @@ public class ConfigModule implements GameModule {
     public void init(ModuleConfig config) {
         this.moduleConfig = config;
         
-        // ? extra ??????
+        // 从 extra 配置获取参数
         this.configRoot = config.getExtra("configRoot", DEFAULT_CONFIG_ROOT);
         this.configPackage = config.getExtra("configPackage", null);
         
@@ -57,12 +57,12 @@ public class ConfigModule implements GameModule {
         ConfigManager configManager = ConfigManager.getInstance();
         configManager.setConfigRoot(configRoot);
         
-        // ???????
+        // 自动扫描配置类
         if (configPackage != null && !configPackage.isEmpty()) {
             configManager.scan(configPackage);
         }
         
-        // ??????
+        // 加载所有配置
         configManager.loadAll();
         
         log.info("Configs loaded, version={}, count={}", 
