@@ -122,7 +122,7 @@ public class ServerConfig {
      * 根据实例配置生成模块配置
      */
     public ModuleConfig getModuleConfig(InstanceConfig instance) {
-        return new ModuleConfig()
+        ModuleConfig config = new ModuleConfig()
                 .serverId(instance.serverId)
                 .host(host)
                 .rpcPort(instance.rpcPort)
@@ -133,30 +133,14 @@ public class ServerConfig {
                 .jdbcUser(jdbcUser)
                 .jdbcPassword(jdbcPassword)
                 .extras(instance.extra);
-    }
-    
-    /**
-     * 获取 gameconfig 模块的配置
-     */
-    public ModuleConfig getGameConfigModuleConfig() {
-        return new ModuleConfig()
-                .zkAddress(zkAddress)
-                .redisAddress(redisAddress)
-                .extra("configRoot", configRoot)
-                .extra("configPackage", configPackage);
-    }
-    
-    /**
-     * 是否需要加载 gameconfig 模块
-     * 当实例中包含 game/world/alliance 时需要
-     */
-    public boolean needsGameConfig() {
-        for (InstanceConfig inst : instances) {
-            if ("game".equals(inst.module) || "world".equals(inst.module) || "alliance".equals(inst.module)) {
-                return true;
-            }
+        
+        // gameconfig 模块的特殊配置
+        if ("gameconfig".equals(instance.module)) {
+            config.extra("configRoot", configRoot);
+            config.extra("configPackage", configPackage);
         }
-        return false;
+        
+        return config;
     }
     
     // ==================== Getter/Setter ====================

@@ -51,12 +51,7 @@ public class Bootstrap {
         // 通过 SPI 发现模块
         registry.discoverModules();
         
-        // 1. 先启动 gameconfig（如果需要）
-        if (serverConfig.needsGameConfig()) {
-            startGameConfig();
-        }
-        
-        // 2. 启动所有业务实例
+        // 按配置顺序启动所有实例
         for (InstanceConfig instance : serverConfig.getInstances()) {
             startInstance(instance);
         }
@@ -71,28 +66,6 @@ public class Bootstrap {
         log.info("  SLG Server Started Successfully!");
         log.info("  Started: {}", startedModules.stream().map(m -> m.instanceId).toList());
         log.info("========================================");
-    }
-    
-    /**
-     * 启动 gameconfig 模块
-     */
-    private void startGameConfig() throws Exception {
-        GameModule module = registry.get("gameconfig");
-        if (module == null) {
-            log.warn("gameconfig module not found in registry");
-            return;
-        }
-        
-        ModuleConfig config = serverConfig.getGameConfigModuleConfig();
-        
-        log.info("Initializing gameconfig...");
-        module.init(config);
-        
-        log.info("Starting gameconfig...");
-        module.start();
-        
-        startedModules.add(new StartedModule("gameconfig", module));
-        log.info("gameconfig started");
     }
     
     /**
@@ -118,7 +91,7 @@ public class Bootstrap {
         moduleInstance.start();
         
         startedModules.add(new StartedModule(instanceId, moduleInstance));
-        log.info("{} started (rpc={}, web={})", instanceId, instance.rpcPort, instance.webPort);
+        log.info("{} started", instanceId);
     }
     
     /**

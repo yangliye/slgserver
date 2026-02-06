@@ -21,8 +21,11 @@ gameconfig:
   configPackage: com.muyi.gameconfig.entity
 
 # ==================== 实例配置 ====================
-# 启动时加载所有实例，gameconfig 自动在最前面加载一次
+# 启动时按顺序加载所有实例
 instances:
+  # 游戏配置（放在最前面，需要时配置）
+  - module: gameconfig
+
   - module: login
     serverId: 1
     rpcPort: 10001
