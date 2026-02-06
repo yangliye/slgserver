@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -25,8 +26,11 @@ public class WebServer {
     private static final Logger log = LoggerFactory.getLogger(WebServer.class);
     
     private final int port;
-    private Javalin app;
+    private final Javalin app;
     private final AtomicBoolean running = new AtomicBoolean(false);
+    
+    /** 复用的 API 注册器实例（volatile 保证可见性） */
+    private volatile GmApiRegistry registry;
     
     public WebServer(int port) {
         this.port = port;
@@ -54,6 +58,15 @@ public class WebServer {
                 "port", port,
                 "timestamp", TimeUtils.currentTimeMillis()
         )));
+        
+        // API 列表接口（用于查看所有已注册的 GM 接口）
+        app.get("/api-list", ctx -> {
+            if (registry != null) {
+                success(ctx, registry.getApiList());
+            } else {
+                success(ctx, List.of());
+            }
+        });
     }
     
     /**
@@ -132,20 +145,27 @@ public class WebServer {
     }
     
     /**
-     * 创建 API 注册器
+     * 获取 API 注册器（双重检查锁定，线程安全懒加载）
      * 用于注解式路由注册
      */
-    public GmApiRegistry createRegistry() {
-        return new GmApiRegistry(app);
+    public GmApiRegistry getRegistry() {
+        if (registry == null) {
+            synchronized (this) {
+                if (registry == null) {
+                    registry = new GmApiRegistry(app);
+                }
+            }
+        }
+        return registry;
     }
     
     /**
      * 注册控制器（快捷方法）
+     * 复用同一个 GmApiRegistry 实例
      */
     public WebServer registerController(Object... controllers) {
-        GmApiRegistry registry = createRegistry();
         for (Object controller : controllers) {
-            registry.register(controller);
+            getRegistry().register(controller);
         }
         return this;
     }

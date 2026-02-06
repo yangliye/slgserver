@@ -22,6 +22,11 @@ import java.util.Map;
  */
 public class ServerConfig {
     
+    /** Yaml 解析器工厂（Yaml 非线程安全，每次创建新实例） */
+    private static Yaml createYaml() {
+        return new Yaml();
+    }
+    
     /** 启动模式：all=全部模块, single=单模块, instance=多实例 */
     private String mode = "all";
     
@@ -55,9 +60,8 @@ public class ServerConfig {
      * 从 YAML 文件加载配置
      */
     public static ServerConfig load(String path) throws Exception {
-        Yaml yaml = new Yaml();
         try (InputStream input = new FileInputStream(path)) {
-            Map<String, Object> data = yaml.load(input);
+            Map<String, Object> data = createYaml().load(input);
             return parse(data);
         }
     }
@@ -66,12 +70,11 @@ public class ServerConfig {
      * 从类路径加载配置
      */
     public static ServerConfig loadFromClasspath(String resource) throws Exception {
-        Yaml yaml = new Yaml();
         try (InputStream input = ServerConfig.class.getClassLoader().getResourceAsStream(resource)) {
             if (input == null) {
                 throw new IllegalArgumentException("Resource not found: " + resource);
             }
-            Map<String, Object> data = yaml.load(input);
+            Map<String, Object> data = createYaml().load(input);
             return parse(data);
         }
     }

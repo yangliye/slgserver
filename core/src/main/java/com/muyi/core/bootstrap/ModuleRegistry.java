@@ -28,10 +28,10 @@ public class ModuleRegistry {
     }
     
     /**
-     * 注册模块
+     * 注册模块（原子操作，防止重复注册）
      */
     public void register(GameModule module) {
-        GameModule existing = modules.put(module.name(), module);
+        GameModule existing = modules.putIfAbsent(module.name(), module);
         if (existing != null) {
             throw new IllegalStateException("Module already registered: " + module.name());
         }

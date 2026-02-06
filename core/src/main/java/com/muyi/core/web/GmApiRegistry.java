@@ -30,8 +30,54 @@ public class GmApiRegistry {
     private final Javalin app;
     private final List<ApiInfo> registeredApis = new ArrayList<>();
     
+    /** 参数元数据缓存：Method -> ParamMeta[] */
+    private final Map<Method, ParamMeta[]> paramMetaCache = new HashMap<>();
+    
     public GmApiRegistry(Javalin app) {
         this.app = app;
+    }
+    
+    /**
+     * 参数元数据（注册时解析，运行时复用）
+     */
+    private static class ParamMeta {
+        final Class<?> type;
+        final String name;
+        final boolean required;
+        final String defaultValue;
+        final boolean isContext;
+        final boolean isSimpleType;
+        final boolean hasParamAnnotation;
+        
+        ParamMeta(Parameter param) {
+            this.type = param.getType();
+            this.isContext = type == Context.class;
+            this.isSimpleType = checkSimpleType(type);
+            
+            Param paramAnn = param.getAnnotation(Param.class);
+            this.hasParamAnnotation = paramAnn != null;
+            
+            if (paramAnn != null) {
+                this.name = paramAnn.value();
+                this.required = paramAnn.required();
+                this.defaultValue = paramAnn.defaultValue();
+            } else {
+                this.name = param.getName();
+                this.required = false;
+                this.defaultValue = "";
+            }
+        }
+        
+        private static boolean checkSimpleType(Class<?> type) {
+            return type == String.class
+                    || type == int.class || type == Integer.class
+                    || type == long.class || type == Long.class
+                    || type == boolean.class || type == Boolean.class
+                    || type == double.class || type == Double.class
+                    || type == float.class || type == Float.class
+                    || type == short.class || type == Short.class
+                    || type == byte.class || type == Byte.class;
+        }
     }
     
     /**
@@ -69,10 +115,18 @@ public class GmApiRegistry {
     private void registerMethod(Object controller, Method method, String path, GmApi apiAnn) {
         method.setAccessible(true);
         
+        // 预解析参数元数据（只在注册时执行一次）
+        Parameter[] params = method.getParameters();
+        ParamMeta[] paramMetas = new ParamMeta[params.length];
+        for (int i = 0; i < params.length; i++) {
+            paramMetas[i] = new ParamMeta(params[i]);
+        }
+        paramMetaCache.put(method, paramMetas);
+        
         // 创建处理器
         io.javalin.http.Handler handler = ctx -> {
             try {
-                Object result = invokeMethod(controller, method, ctx);
+                Object result = invokeMethod(controller, method, paramMetas, ctx);
                 
                 // 如果方法返回 void 或已经处理了响应，跳过
                 if (method.getReturnType() == void.class || ctx.res().isCommitted()) {
@@ -109,33 +163,29 @@ public class GmApiRegistry {
     }
     
     /**
-     * 调用方法并自动注入参数
+     * 调用方法并自动注入参数（使用缓存的元数据）
      */
-    private Object invokeMethod(Object controller, Method method, Context ctx) throws Exception {
-        Parameter[] params = method.getParameters();
-        Object[] args = new Object[params.length];
+    private Object invokeMethod(Object controller, Method method, ParamMeta[] paramMetas, Context ctx) throws Exception {
+        Object[] args = new Object[paramMetas.length];
         
-        for (int i = 0; i < params.length; i++) {
-            Parameter param = params[i];
-            Class<?> type = param.getType();
+        for (int i = 0; i < paramMetas.length; i++) {
+            ParamMeta meta = paramMetas[i];
             
             // 如果是 Context 类型，直接注入
-            if (type == Context.class) {
+            if (meta.isContext) {
                 args[i] = ctx;
                 continue;
             }
             
-            // 检查 @Param 注解
-            Param paramAnn = param.getAnnotation(Param.class);
-            if (paramAnn != null) {
-                args[i] = resolveParam(ctx, paramAnn, type);
-            } else if (isSimpleType(type)) {
+            // 根据参数元数据解析
+            if (meta.hasParamAnnotation) {
+                args[i] = resolveParamWithMeta(ctx, meta);
+            } else if (meta.isSimpleType) {
                 // 简单类型：尝试用参数名从 query/form 获取
-                String paramName = param.getName();
-                args[i] = resolveParamByName(ctx, paramName, type, false, null);
+                args[i] = resolveParamByName(ctx, meta.name, meta.type, false, null);
             } else {
                 // 复杂对象类型：从请求体 JSON 反序列化
-                args[i] = resolveBodyParam(ctx, type);
+                args[i] = resolveBodyParam(ctx, meta.type);
             }
         }
         
@@ -143,58 +193,53 @@ public class GmApiRegistry {
     }
     
     /**
-     * 判断是否为简单类型
+     * 使用参数元数据解析参数值
      */
-    private boolean isSimpleType(Class<?> type) {
-        return type == String.class
-                || type == int.class || type == Integer.class
-                || type == long.class || type == Long.class
-                || type == boolean.class || type == Boolean.class
-                || type == double.class || type == Double.class
-                || type == float.class || type == Float.class
-                || type == short.class || type == Short.class
-                || type == byte.class || type == Byte.class;
+    private Object resolveParamWithMeta(Context ctx, ParamMeta meta) {
+        String value = ctx.queryParam(meta.name);
+        
+        // 检查必填
+        if (meta.required && (value == null || value.isEmpty())) {
+            throw new IllegalArgumentException("缺少必填参数: " + meta.name);
+        }
+        
+        // 使用默认值
+        if ((value == null || value.isEmpty()) && !meta.defaultValue.isEmpty()) {
+            value = meta.defaultValue;
+        }
+        
+        return convertValue(value, meta.type, meta.name);
     }
     
     /**
      * 从请求体解析复杂对象参数
      */
     private Object resolveBodyParam(Context ctx, Class<?> type) {
+        String body = ctx.body();
+        
+        // 空请求体直接创建默认对象
+        if (body == null || body.isEmpty() || body.equals("{}")) {
+            return createDefaultInstance(type);
+        }
+        
+        // 尝试 JSON 反序列化
         try {
-            String body = ctx.body();
-            if (body == null || body.isEmpty() || body.equals("{}")) {
-                // 尝试创建空对象
-                return type.getDeclaredConstructor().newInstance();
-            }
             return ctx.bodyAsClass(type);
         } catch (Exception e) {
             log.warn("Failed to parse body as {}: {}", type.getSimpleName(), e.getMessage());
-            try {
-                return type.getDeclaredConstructor().newInstance();
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("无法解析请求体为: " + type.getSimpleName());
-            }
+            return createDefaultInstance(type);
         }
     }
     
     /**
-     * 解析参数值
+     * 创建默认实例
      */
-    private Object resolveParam(Context ctx, Param paramAnn, Class<?> type) {
-        String name = paramAnn.value();
-        String value = ctx.queryParam(name);
-        
-        // 检查必填
-        if (paramAnn.required() && (value == null || value.isEmpty())) {
-            throw new IllegalArgumentException("缺少必填参数: " + name);
+    private Object createDefaultInstance(Class<?> type) {
+        try {
+            return type.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("无法创建默认实例: " + type.getSimpleName());
         }
-        
-        // 使用默认值
-        if ((value == null || value.isEmpty()) && !paramAnn.defaultValue().isEmpty()) {
-            value = paramAnn.defaultValue();
-        }
-        
-        return convertValue(value, type, name);
     }
     
     /**
@@ -226,6 +271,8 @@ public class GmApiRegistry {
             if (type == boolean.class) return false;
             if (type == double.class) return 0.0;
             if (type == float.class) return 0.0f;
+            if (type == short.class) return (short) 0;
+            if (type == byte.class) return (byte) 0;
             return null;
         }
         
@@ -242,6 +289,10 @@ public class GmApiRegistry {
                 return Double.parseDouble(value);
             } else if (type == float.class || type == Float.class) {
                 return Float.parseFloat(value);
+            } else if (type == short.class || type == Short.class) {
+                return Short.parseShort(value);
+            } else if (type == byte.class || type == Byte.class) {
+                return Byte.parseByte(value);
             }
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("参数格式错误: " + paramName + "=" + value);
@@ -274,36 +325,33 @@ public class GmApiRegistry {
     }
     
     /**
-     * 提取方法参数信息
+     * 提取方法参数信息（使用缓存的元数据）
      */
     private List<Map<String, Object>> extractParams(Method method) {
         List<Map<String, Object>> params = new ArrayList<>();
-        for (Parameter param : method.getParameters()) {
-            Class<?> type = param.getType();
-            if (type == Context.class) {
+        ParamMeta[] metas = paramMetaCache.get(method);
+        if (metas == null) {
+            return params;
+        }
+        
+        for (ParamMeta meta : metas) {
+            if (meta.isContext) {
                 continue;
             }
             
             Map<String, Object> info = new HashMap<>();
-            Param paramAnn = param.getAnnotation(Param.class);
-            if (paramAnn != null) {
-                info.put("name", paramAnn.value());
-                info.put("required", paramAnn.required());
-                info.put("defaultValue", paramAnn.defaultValue());
-                info.put("source", "query");
-            } else if (isSimpleType(type)) {
-                info.put("name", param.getName());
-                info.put("required", false);
-                info.put("defaultValue", "");
+            info.put("name", meta.name);
+            info.put("type", meta.type.getSimpleName());
+            
+            if (meta.hasParamAnnotation || meta.isSimpleType) {
+                info.put("required", meta.required);
+                info.put("defaultValue", meta.defaultValue);
                 info.put("source", "query");
             } else {
-                // 复杂对象类型
-                info.put("name", param.getName());
                 info.put("required", true);
                 info.put("defaultValue", "");
                 info.put("source", "body");
             }
-            info.put("type", type.getSimpleName());
             params.add(info);
         }
         return params;

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 服务器启动器
@@ -26,7 +27,7 @@ public class Bootstrap {
     private final List<GameModule> startedModules = new ArrayList<>();
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     
-    private volatile boolean running = false;
+    private final AtomicBoolean running = new AtomicBoolean(false);
     
     public Bootstrap(ServerConfig serverConfig) {
         this.serverConfig = serverConfig;
@@ -37,7 +38,7 @@ public class Bootstrap {
      * 启动服务器
      */
     public void start() throws Exception {
-        if (running) {
+        if (!running.compareAndSet(false, true)) {
             log.warn("Server is already running");
             return;
         }
@@ -55,6 +56,7 @@ public class Bootstrap {
         List<GameModule> modulesToStart = getModulesToStart();
         if (modulesToStart.isEmpty()) {
             log.warn("No modules to start");
+            running.set(false);
             return;
         }
         
@@ -77,13 +79,12 @@ public class Bootstrap {
                 startedModules.add(module);
             } catch (Exception e) {
                 log.error("Failed to start module: {}", module.name(), e);
-                // 启动失败，停止已启动的模块
-                shutdown();
+                // 启动失败，重置状态并停止已启动的模块
+                running.set(false);
+                doShutdown();
                 throw e;
             }
         }
-        
-        running = true;
         
         // 注册 Shutdown Hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -108,11 +109,16 @@ public class Bootstrap {
      * 关闭服务器
      */
     public void shutdown() {
-        if (!running) {
+        if (!running.compareAndSet(true, false)) {
             return;
         }
-        running = false;
-        
+        doShutdown();
+    }
+    
+    /**
+     * 执行关闭逻辑（内部方法）
+     */
+    private void doShutdown() {
         log.info("========================================");
         log.info("  SLG Server Shutting down...");
         log.info("========================================");
@@ -165,7 +171,7 @@ public class Bootstrap {
      * 是否运行中
      */
     public boolean isRunning() {
-        return running;
+        return running.get();
     }
     
     /**
