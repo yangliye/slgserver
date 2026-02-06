@@ -1,0 +1,62 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+// 设置打包名称
+base {
+    archivesName = 'slg_gameconfig'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+dependencies {
+    // 通用工具模块
+    api project(':common')
+    
+    // ClassGraph - 类扫描（配置类自动发现）
+    api 'io.github.classgraph:classgraph:4.8.174'
+    
+    // SLF4J 日志
+    api 'org.slf4j:slf4j-api:2.0.17'
+    
+    // 测试依赖
+    testImplementation platform('org.junit:junit-bom:5.14.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.27'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// 发布到本地 Maven 仓库
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            
+            pom {
+                name = 'Muyi SLG GameConfig'
+                description = '游戏配置加载框架，支持 XML 配置、热更新、自定义转换器'
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version
+        )
+    }
+}
