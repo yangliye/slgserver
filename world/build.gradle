@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+}
+
+base {
+    archivesName = 'slg_world'
+}
+
+dependencies {
+    // 核心框架
+    api project(':core')
+    
+    // 游戏配置
+    api project(':gameconfig')
+    
+    // 业务公共
+    api project(':shared')
+    
+    // 数据库框架
+    api project(':db')
+    
+    // 测试依赖
+    testImplementation platform('org.junit:junit-bom:5.14.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.27'
+}

@@ -17,6 +17,9 @@ dependencies {
     // 通用工具模块
     api project(':common')
     
+    // 核心框架（仅编译时需要，用于实现 GameModule 接口）
+    compileOnly project(':core')
+    
     // ClassGraph - 类扫描（配置类自动发现）
     api 'io.github.classgraph:classgraph:4.8.174'
     

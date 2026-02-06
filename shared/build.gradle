@@ -5,7 +5,7 @@ plugins {
 
 // 设置打包名称
 base {
-    archivesName = 'slg_core'
+    archivesName = 'slg_shared'
 }
 
 java {
@@ -17,18 +17,6 @@ dependencies {
     // 通用工具模块
     api project(':common')
     
-    // RPC框架
-    api project(':rpc')
-    
-    // Javalin - 轻量级Web框架
-    api 'io.javalin:javalin:6.4.0'
-    
-    // SnakeYAML - 配置文件解析
-    api 'org.yaml:snakeyaml:2.3'
-    
-    // ClassGraph - 类扫描（用于Web注解扫描）
-    api 'io.github.classgraph:classgraph:4.8.174'
-    
     // SLF4J 日志
     api 'org.slf4j:slf4j-api:2.0.17'
     
@@ -36,7 +24,6 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.14.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'ch.qos.logback:logback-classic:1.5.27'
 }
 
 tasks.withType(Javadoc).configureEach {
@@ -51,8 +38,8 @@ publishing {
             from components.java
             
             pom {
-                name = 'Muyi SLG Core Framework'
-                description = 'SLG 游戏核心框架，提供模块化启动、配置管理、Web基础'
+                name = 'Muyi SLG Shared'
+                description = '业务模块间共享的类定义：DTO、枚举、协议等'
             }
         }
     }

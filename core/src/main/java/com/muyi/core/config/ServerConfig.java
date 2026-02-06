@@ -56,6 +56,10 @@ public class ServerConfig {
     /** 多实例配置列表 */
     private List<InstanceConfig> instances = new ArrayList<>();
     
+    /** 游戏配置模块设置 */
+    private String configRoot = "serverconfig/gamedata";
+    private String configPackage;
+    
     /**
      * 从 YAML 文件加载配置
      */
@@ -145,6 +149,11 @@ public class ServerConfig {
             }
         }
         
+        // 游戏配置模块设置
+        Map<String, Object> gameconfig = (Map<String, Object>) data.getOrDefault("gameconfig", new HashMap<>());
+        config.configRoot = (String) gameconfig.getOrDefault("configRoot", "serverconfig/gamedata");
+        config.configPackage = (String) gameconfig.get("configPackage");
+        
         return config;
     }
     
@@ -154,7 +163,7 @@ public class ServerConfig {
     public ModuleConfig getModuleConfig(String moduleName) {
         PortConfig portConfig = ports.getOrDefault(moduleName, new PortConfig());
         
-        return new ModuleConfig()
+        ModuleConfig moduleConfig = new ModuleConfig()
                 .serverId(serverId)
                 .host(host)
                 .rpcPort(portConfig.rpcPort)
@@ -164,6 +173,16 @@ public class ServerConfig {
                 .jdbcUrl(jdbcUrl)
                 .jdbcUser(jdbcUser)
                 .jdbcPassword(jdbcPassword);
+        
+        // gameconfig 模块的特殊配置
+        if ("gameconfig".equals(moduleName)) {
+            moduleConfig.extra("configRoot", configRoot);
+            if (configPackage != null) {
+                moduleConfig.extra("configPackage", configPackage);
+            }
+        }
+        
+        return moduleConfig;
     }
     
     /**
@@ -253,6 +272,22 @@ public class ServerConfig {
     
     public void setRedisAddress(String redisAddress) {
         this.redisAddress = redisAddress;
+    }
+    
+    public String getConfigRoot() {
+        return configRoot;
+    }
+    
+    public void setConfigRoot(String configRoot) {
+        this.configRoot = configRoot;
+    }
+    
+    public String getConfigPackage() {
+        return configPackage;
+    }
+    
+    public void setConfigPackage(String configPackage) {
+        this.configPackage = configPackage;
     }
     
     /**

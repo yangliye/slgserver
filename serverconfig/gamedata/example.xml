@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <item id="1" name="示例1" type="1" value="100" tags="1,2,3" rewards="1001:10,1002:20" />
+    <item id="2" name="示例2" type="2" value="200" tags="4,5" rewards="1003:30" />
+    <item id="3" name="示例3" type="3" value="300" tags="1,3,5" rewards="1001:50,1002:100" />
+</config>

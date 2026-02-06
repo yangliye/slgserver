@@ -1,6 +1,21 @@
 rootProject.name = 'slgserver'
 
-// 子模块
+// 基础模块
 include 'common'
 include 'db'
 include 'rpc'
+
+// 核心框架
+include 'core'
+
+// 业务公共
+include 'shared'      // 业务模块间共享的类定义（DTO、枚举、协议）
+
+include 'gameconfig'  // 游戏配置加载，独立可扩展
+
+// 业务模块
+include 'login'
+include 'gate'
+include 'game'
+include 'world'
+include 'alliance'

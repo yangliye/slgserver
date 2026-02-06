@@ -39,6 +39,14 @@ alwaysApply: true
 - 优先使用 Go 语言，不用 Python
 - 不要在项目目录创建临时文件
 
+## Git 推送规范
+
+**重要：代码未调试完成不允许推送到 GitHub**
+
+- 只有用户明确要求推送时才执行 `git push`
+- 推送前确认代码已通过编译和测试
+- 不要主动推送，等待用户指示
+
 ## 提交规范
 
 使用 Conventional Commits：
