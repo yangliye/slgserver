@@ -1,9 +1,9 @@
-package com.muyi.gameconfig;
+package com.muyi.config;
 
 import java.util.List;
 
 /**
- * 配置加载器接口
+ * 配置加载器接�?
  *
  * @author muyi
  */

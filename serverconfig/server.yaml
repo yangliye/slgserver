@@ -15,16 +15,16 @@ database:
   user: root
   password: 123456
 
-# 游戏配置模块设置
-gameconfig:
+# 配置模块设置
+config:
   configRoot: serverconfig/gamedata
-  configPackage: com.muyi.gameconfig.entity
+  configPackage: com.muyi.config.entity
 
 # ==================== 实例配置 ====================
 # 启动时按顺序加载所有实例
 instances:
-  # 游戏配置（放在最前面，需要时配置）
-  - module: gameconfig
+  # 配置模块（放在最前面，需要时配置）
+  - module: config
 
   - module: login
     serverId: 1

@@ -1,20 +1,20 @@
-package com.muyi.gameconfig.converter;
+package com.muyi.config.converter;
 
-import com.muyi.gameconfig.IFieldConverter;
+import com.muyi.config.IFieldConverter;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * 整数列表转换器
- * 将 "1,2,3" 转换为 List<Integer>
+ * 整数列表转换�?
+ * �?"1,2,3" 转换�?List<Integer>
  *
  * @author muyi
  */
 public class IntListConverter implements IFieldConverter<List<Integer>> {
     
-    /** 分隔符 */
+    /** 分隔�?*/
     private static final String SEPARATOR = ",";
     
     @Override

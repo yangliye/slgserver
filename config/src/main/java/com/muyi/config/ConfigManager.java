@@ -1,4 +1,4 @@
-package com.muyi.gameconfig;
+package com.muyi.config;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
@@ -18,15 +18,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * 配置管理器（单例）
- * 全局共享的游戏配置中心
+ * 配置管理器（单例�?
+ * 全局共享的游戏配置中�?
  * 
- * 使用示例：
+ * 使用示例�?
  * <pre>{@code
  * // 1. 注册配置类型
  * ConfigManager.getInstance().register(UnitConfig.class, "config/unit.xml");
  * 
- * // 2. 加载所有配置
+ * // 2. 加载所有配�?
  * ConfigManager.getInstance().loadAll();
  * 
  * // 3. 获取配置
@@ -49,22 +49,22 @@ public class ConfigManager {
     /** 配置文件映射 Class -> filePath */
     private final Map<Class<? extends IConfig>, String> configFiles = new ConcurrentHashMap<>();
     
-    /** 配置加载器（线程安全） */
+    /** 配置加载器（线程安全�?*/
     private final List<ConfigLoader> loaders = new CopyOnWriteArrayList<>();
     
-    /** 扩展名 -> 加载器缓存 */
+    /** 扩展�?-> 加载器缓�?*/
     private final Map<String, ConfigLoader> loaderCache = new ConcurrentHashMap<>();
     
-    /** 配置根目录 */
+    /** 配置根目�?*/
     private volatile String configRoot = "config";
     
-    /** 是否已加载 */
+    /** 是否已加�?*/
     private volatile boolean loaded = false;
     
-    /** 配置版本号（每次热更递增） */
+    /** 配置版本号（每次热更递增�?*/
     private final AtomicLong version = new AtomicLong(0);
     
-    /** 热更监听器 */
+    /** 热更监听�?*/
     private final List<ConfigReloadListener> listeners = new CopyOnWriteArrayList<>();
     
     /** 读写锁，保证热更时的线程安全 */
@@ -74,7 +74,7 @@ public class ConfigManager {
     private volatile boolean atomicReload = true;
     
     private ConfigManager() {
-        // 注册默认加载器
+        // 注册默认加载�?
         addLoader(new XmlConfigLoader());
     }
     
@@ -86,7 +86,7 @@ public class ConfigManager {
     }
     
     /**
-     * 设置配置根目录
+     * 设置配置根目�?
      */
     public ConfigManager setConfigRoot(String configRoot) {
         this.configRoot = configRoot;
@@ -94,7 +94,7 @@ public class ConfigManager {
     }
     
     /**
-     * 添加配置加载器
+     * 添加配置加载�?
      */
     public ConfigManager addLoader(ConfigLoader loader) {
         loaders.add(loader);
@@ -115,7 +115,7 @@ public class ConfigManager {
     }
     
     /**
-     * 添加热更监听器
+     * 添加热更监听�?
      */
     public ConfigManager addReloadListener(ConfigReloadListener listener) {
         listeners.add(listener);
@@ -123,7 +123,7 @@ public class ConfigManager {
     }
     
     /**
-     * 移除热更监听器
+     * 移除热更监听�?
      */
     public ConfigManager removeReloadListener(ConfigReloadListener listener) {
         listeners.remove(listener);
@@ -131,7 +131,7 @@ public class ConfigManager {
     }
     
     /**
-     * 获取当前版本号
+     * 获取当前版本�?
      */
     public long getVersion() {
         return version.get();
@@ -140,8 +140,8 @@ public class ConfigManager {
     /**
      * 注册配置类型（手动注册）
      *
-     * @param configClass 配置类
-     * @param fileName 文件名（相对于 configRoot）
+     * @param configClass 配置�?
+     * @param fileName 文件名（相对�?configRoot�?
      */
     public <T extends IConfig> ConfigManager register(Class<T> configClass, String fileName) {
         containers.put(configClass, new ConfigContainer<>(configClass));
@@ -190,7 +190,7 @@ public class ConfigManager {
     }
     
     /**
-     * 扫描多个包
+     * 扫描多个�?
      */
     public ConfigManager scan(String... packageNames) {
         for (String packageName : packageNames) {
@@ -200,7 +200,7 @@ public class ConfigManager {
     }
     
     /**
-     * 根据类名生成文件名
+     * 根据类名生成文件�?
      * UnitConfig -> unit.xml
      * BuildingConfig -> building.xml
      */
@@ -212,7 +212,7 @@ public class ConfigManager {
             simpleName = simpleName.substring(0, simpleName.length() - 6);
         }
         
-        // 驼峰转下划线，再转小写
+        // 驼峰转下划线，再转小�?
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < simpleName.length(); i++) {
             char c = simpleName.charAt(i);
@@ -226,7 +226,7 @@ public class ConfigManager {
     }
     
     /**
-     * 加载所有配置
+     * 加载所有配�?
      */
     public void loadAll() throws Exception {
         log.info("Loading all configs from: {}", configRoot);
@@ -248,7 +248,7 @@ public class ConfigManager {
     public <T extends IConfig> void loadConfig(Class<T> configClass, String fileName) throws Exception {
         String path = configRoot + File.separator + fileName;
         
-        // 查找合适的加载器
+        // 查找合适的加载�?
         ConfigLoader loader = findLoader(fileName);
         if (loader == null) {
             throw new IllegalArgumentException("No loader found for: " + fileName);
@@ -290,7 +290,7 @@ public class ConfigManager {
      * 多表热更（核心方法）
      * 支持原子性更新，任一表失败可回滚
      * 
-     * @param configClasses 要热更的配置类
+     * @param configClasses 要热更的配置�?
      * @return 热更结果
      */
     @SuppressWarnings("unchecked")
@@ -306,10 +306,10 @@ public class ConfigManager {
         long startTime = System.currentTimeMillis();
         ReloadResult.Builder resultBuilder = new ReloadResult.Builder();
         
-        // 通知监听器：热更开始
+        // 通知监听器：热更开�?
         notifyBeforeReload(configClasses);
         
-        // 临时容器（双缓冲）
+        // 临时容器（双缓冲�?
         Map<Class<? extends IConfig>, ConfigContainer<?>> tempContainers = new ConcurrentHashMap<>();
         Map<Class<? extends IConfig>, ConfigContainer<?>> oldContainers = new ConcurrentHashMap<>();
         
@@ -333,14 +333,14 @@ public class ConfigManager {
                     continue;
                 }
                 
-                // 加载到临时容器
+                // 加载到临时容�?
                 List<IConfig> configs = (List<IConfig>) loader.load(path, configClass);
                 ConfigContainer<IConfig> tempContainer = new ConfigContainer<>((Class<IConfig>) configClass);
                 tempContainer.setAll(configs);
                 
                 tempContainers.put(configClass, tempContainer);
                 
-                // 保存旧容器（用于回滚）
+                // 保存旧容器（用于回滚�?
                 ConfigContainer<?> oldContainer = containers.get(configClass);
                 if (oldContainer != null) {
                     oldContainers.put(configClass, oldContainer);
@@ -358,11 +358,11 @@ public class ConfigManager {
         
         // 第二阶段：原子切换或部分更新
         if (atomicReload && !allSuccess) {
-            // 原子模式：有失败则全部回滚
+            // 原子模式：有失败则全部回�?
             log.warn("Atomic reload failed, rolling back all changes");
             resultBuilder.success(false);
         } else {
-            // 切换成功的配置
+            // 切换成功的配�?
             rwLock.writeLock().lock();
             try {
                 for (Map.Entry<Class<? extends IConfig>, ConfigContainer<?>> entry : tempContainers.entrySet()) {
@@ -372,7 +372,7 @@ public class ConfigManager {
                     notifyConfigReloaded(entry.getKey(), true);
                 }
                 
-                // 更新版本号
+                // 更新版本�?
                 long newVersion = version.incrementAndGet();
                 resultBuilder.version(newVersion);
                 
@@ -399,7 +399,7 @@ public class ConfigManager {
     /**
      * 按文件名热更配置
      * 
-     * @param fileNames 配置文件名列表
+     * @param fileNames 配置文件名列�?
      */
     public ReloadResult reloadByFileNames(String... fileNames) {
         List<Class<? extends IConfig>> classesToReload = new ArrayList<>();
@@ -465,7 +465,7 @@ public class ConfigManager {
     }
     
     /**
-     * 根据 ID 获取配置（不存在则抛异常）
+     * 根据 ID 获取配置（不存在则抛异常�?
      */
     @SuppressWarnings("unchecked")
     public <T extends IConfig> T getOrThrow(Class<T> configClass, int id) {
@@ -482,7 +482,7 @@ public class ConfigManager {
     }
     
     /**
-     * 获取所有配置
+     * 获取所有配�?
      */
     @SuppressWarnings("unchecked")
     public <T extends IConfig> List<T> getAll(Class<T> configClass) {
@@ -509,7 +509,7 @@ public class ConfigManager {
     }
     
     /**
-     * 获取所有已注册的配置类名
+     * 获取所有已注册的配置类�?
      */
     public Set<String> getRegisteredConfigNames() {
         Set<String> names = ConcurrentHashMap.newKeySet();
@@ -520,7 +520,7 @@ public class ConfigManager {
     }
     
     /**
-     * 根据类名查找配置类
+     * 根据类名查找配置�?
      */
     public Class<? extends IConfig> findConfigClass(String simpleName) {
         for (Class<? extends IConfig> clazz : configFiles.keySet()) {
@@ -551,7 +551,7 @@ public class ConfigManager {
     }
     
     /**
-     * 是否已加载
+     * 是否已加�?
      */
     public boolean isLoaded() {
         return loaded;
@@ -565,7 +565,7 @@ public class ConfigManager {
     }
     
     /**
-     * 查找合适的加载器（使用缓存）
+     * 查找合适的加载器（使用缓存�?
      */
     private ConfigLoader findLoader(String fileName) {
         // 从缓存中查找
@@ -578,7 +578,7 @@ public class ConfigManager {
             }
         }
         
-        // 回退到遍历查找
+        // 回退到遍历查�?
         for (ConfigLoader loader : loaders) {
             for (String ext : loader.supportedExtensions()) {
                 if (fileName.endsWith(ext)) {
@@ -590,7 +590,7 @@ public class ConfigManager {
     }
     
     /**
-     * 清空所有配置
+     * 清空所有配�?
      */
     public void clear() {
         rwLock.writeLock().lock();

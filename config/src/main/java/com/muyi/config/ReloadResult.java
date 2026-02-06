@@ -1,4 +1,4 @@
-package com.muyi.gameconfig;
+package com.muyi.config;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,16 +13,16 @@ public class ReloadResult {
     /** 是否成功 */
     private final boolean success;
     
-    /** 版本号 */
+    /** 版本�?*/
     private final long version;
     
     /** 耗时(ms) */
     private final long costTime;
     
-    /** 成功的配置 */
+    /** 成功的配�?*/
     private final List<String> successConfigs;
     
-    /** 失败的配置 */
+    /** 失败的配�?*/
     private final List<String> failedConfigs;
     
     /** 错误信息 */

@@ -1,14 +1,14 @@
-package com.muyi.gameconfig.converter;
+package com.muyi.config.converter;
 
-import com.muyi.gameconfig.IFieldConverter;
+import com.muyi.config.IFieldConverter;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 整数-整数映射转换器
- * 将 "1:100,2:200,3:300" 转换为 Map<Integer, Integer>
+ * 整数-整数映射转换�?
+ * �?"1:100,2:200,3:300" 转换�?Map<Integer, Integer>
  * 
  * 格式：key:value,key:value,...
  *
@@ -42,7 +42,7 @@ public class IntIntMapConverter implements IFieldConverter<Map<Integer, Integer>
             }
         }
         
-        // 返回不可变 Map，防止意外修改配置数据
+        // 返回不可�?Map，防止意外修改配置数�?
         return Collections.unmodifiableMap(result);
     }
     

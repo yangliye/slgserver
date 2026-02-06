@@ -1,4 +1,4 @@
-package com.muyi.gameconfig;
+package com.muyi.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * XML 配置加载器
+ * XML 配置加载�?
  * 
- * XML 格式示例：
+ * XML 格式示例�?
  * <pre>{@code
  * <?xml version="1.0" encoding="UTF-8"?>
  * <config>
@@ -35,16 +35,16 @@ public class XmlConfigLoader implements ConfigLoader {
     
     private static final Logger log = LoggerFactory.getLogger(XmlConfigLoader.class);
     
-    /** 支持的扩展名（避免每次调用创建新数组） */
+    /** 支持的扩展名（避免每次调用创建新数组�?*/
     private static final String[] SUPPORTED_EXTENSIONS = {".xml"};
     
     /** StAX 工厂（线程安全） */
     private final XMLInputFactory xmlFactory;
     
-    /** 转换器缓存 Class -> Instance */
+    /** 转换器缓�?Class -> Instance */
     private final Map<Class<? extends IFieldConverter<?>>, IFieldConverter<?>> converterCache = new ConcurrentHashMap<>();
     
-    /** 字段元数据缓存 ConfigClass -> FieldMeta[] （避免重复反射） */
+    /** 字段元数据缓�?ConfigClass -> FieldMeta[] （避免重复反射） */
     private final Map<Class<?>, FieldMeta[]> fieldMetaCache = new ConcurrentHashMap<>();
     
     public XmlConfigLoader() {
@@ -55,7 +55,7 @@ public class XmlConfigLoader implements ConfigLoader {
     }
     
     /**
-     * 字段元数据（缓存反射信息，避免每次解析都反射）
+     * 字段元数据（缓存反射信息，避免每次解析都反射�?
      */
     private static class FieldMeta {
         final Field field;
@@ -64,7 +64,7 @@ public class XmlConfigLoader implements ConfigLoader {
         final Class<? extends IFieldConverter<?>> converterClass;
         
         FieldMeta(Field field) {
-            field.setAccessible(true);  // 一次性设置
+            field.setAccessible(true);  // 一次性设�?
             this.field = field;
             this.name = field.getName();
             this.type = field.getType();
@@ -76,7 +76,7 @@ public class XmlConfigLoader implements ConfigLoader {
     
     @Override
     public <T extends IConfig> List<T> load(String path, Class<T> configClass) throws Exception {
-        // 尝试从文件系统加载
+        // 尝试从文件系统加�?
         File file = new File(path);
         if (file.exists()) {
             try (InputStream input = new FileInputStream(file)) {
@@ -102,7 +102,7 @@ public class XmlConfigLoader implements ConfigLoader {
     }
     
     /**
-     * 使用 StAX 流式解析（低内存占用）
+     * 使用 StAX 流式解析（低内存占用�?
      */
     private <T extends IConfig> List<T> parseStream(InputStream input, Class<T> configClass) throws Exception {
         List<T> result = new ArrayList<>();
@@ -128,7 +128,7 @@ public class XmlConfigLoader implements ConfigLoader {
     }
     
     /**
-     * 解析单个 item 元素（StAX 流式）
+     * 解析单个 item 元素（StAX 流式�?
      */
     private <T extends IConfig> T parseItem(XMLStreamReader reader, Class<T> configClass, FieldMeta[] fieldMetas) throws Exception {
         T config;
@@ -138,7 +138,7 @@ public class XmlConfigLoader implements ConfigLoader {
             throw new IllegalArgumentException("Config class must have a no-arg constructor: " + configClass.getName(), e);
         }
         
-        // 提取属性
+        // 提取属�?
         int attrCount = reader.getAttributeCount();
         Map<String, String> rawAttributes = new HashMap<>((int) (attrCount / 0.75) + 1);
         
@@ -146,7 +146,7 @@ public class XmlConfigLoader implements ConfigLoader {
             rawAttributes.put(reader.getAttributeLocalName(i), reader.getAttributeValue(i));
         }
         
-        // 字段赋值
+        // 字段赋�?
         for (FieldMeta meta : fieldMetas) {
             String attrValue = rawAttributes.get(meta.name);
             
@@ -181,14 +181,14 @@ public class XmlConfigLoader implements ConfigLoader {
     }
     
     /**
-     * 获取所有实例字段（包括父类，排除 static、transient 和 synthetic）
+     * 获取所有实例字段（包括父类，排�?static、transient �?synthetic�?
      */
     private List<Field> getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         while (clazz != null && clazz != Object.class) {
             for (Field field : clazz.getDeclaredFields()) {
                 int modifiers = field.getModifiers();
-                // 跳过 static、transient 和 synthetic 字段
+                // 跳过 static、transient �?synthetic 字段
                 if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers) || field.isSynthetic()) {
                     continue;
                 }
@@ -200,7 +200,7 @@ public class XmlConfigLoader implements ConfigLoader {
     }
     
     /**
-     * 使用自定义转换器转换值
+     * 使用自定义转换器转换�?
      */
     @SuppressWarnings("unchecked")
     private Object convertWithConverter(String value, Class<? extends IFieldConverter<?>> converterClass) throws Exception {
@@ -243,7 +243,7 @@ public class XmlConfigLoader implements ConfigLoader {
             return Enum.valueOf((Class<Enum>) type, value);
         }
         
-        // 默认返回字符串
+        // 默认返回字符�?
         return value;
     }
     

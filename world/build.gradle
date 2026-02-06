@@ -10,8 +10,8 @@ dependencies {
     // 核心框架
     api project(':core')
     
-    // 游戏配置
-    api project(':gameconfig')
+    // 配置模块
+    api project(':config')
     
     // 业务公共
     api project(':shared')

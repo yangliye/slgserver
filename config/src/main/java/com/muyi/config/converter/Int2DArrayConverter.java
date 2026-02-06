@@ -1,10 +1,10 @@
-package com.muyi.gameconfig.converter;
+package com.muyi.config.converter;
 
-import com.muyi.gameconfig.IFieldConverter;
+import com.muyi.config.IFieldConverter;
 
 /**
- * 二维整数数组转换器
- * 将 "1,2,3;4,5,6;7,8,9" 转换为 int[][]
+ * 二维整数数组转换�?
+ * �?"1,2,3;4,5,6;7,8,9" 转换�?int[][]
  * 
  * 格式：行内用逗号分隔，行间用分号分隔
  *

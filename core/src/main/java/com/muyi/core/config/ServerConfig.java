@@ -41,7 +41,7 @@ public class ServerConfig {
     /** 实例配置列表 */
     private List<InstanceConfig> instances = new ArrayList<>();
     
-    /** 游戏配置模块设置 */
+    /** 配置模块设置 */
     private String configRoot = "serverconfig/gamedata";
     private String configPackage;
     
@@ -110,10 +110,10 @@ public class ServerConfig {
             }
         }
         
-        // 游戏配置模块设置
-        Map<String, Object> gameconfig = (Map<String, Object>) data.getOrDefault("gameconfig", new HashMap<>());
-        config.configRoot = (String) gameconfig.getOrDefault("configRoot", "serverconfig/gamedata");
-        config.configPackage = (String) gameconfig.get("configPackage");
+        // 配置模块设置
+        Map<String, Object> configSection = (Map<String, Object>) data.getOrDefault("config", new HashMap<>());
+        config.configRoot = (String) configSection.getOrDefault("configRoot", "serverconfig/gamedata");
+        config.configPackage = (String) configSection.get("configPackage");
         
         return config;
     }
@@ -134,8 +134,8 @@ public class ServerConfig {
                 .jdbcPassword(jdbcPassword)
                 .extras(instance.extra);
         
-        // gameconfig 模块的特殊配置
-        if ("gameconfig".equals(instance.module)) {
+        // config 模块的特殊配置
+        if ("config".equals(instance.module)) {
             config.extra("configRoot", configRoot);
             config.extra("configPackage", configPackage);
         }

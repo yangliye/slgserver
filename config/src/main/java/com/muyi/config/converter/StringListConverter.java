@@ -1,6 +1,6 @@
-package com.muyi.gameconfig.converter;
+package com.muyi.config.converter;
 
-import com.muyi.gameconfig.IFieldConverter;
+import com.muyi.config.IFieldConverter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 字符串列表转换器
- * 将 "a,b,c" 转换为 List<String>
+ * �?"a,b,c" 转换�?List<String>
  *
  * @author muyi
  */

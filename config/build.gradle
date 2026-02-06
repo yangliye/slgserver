@@ -5,7 +5,7 @@ plugins {
 
 // 设置打包名称
 base {
-    archivesName = 'slg_gameconfig'
+    archivesName = 'slg_config'
 }
 
 java {
@@ -45,8 +45,8 @@ publishing {
             from components.java
             
             pom {
-                name = 'Muyi SLG GameConfig'
-                description = '游戏配置加载框架，支持 XML 配置、热更新、自定义转换器'
+                name = 'Muyi SLG Config'
+                description = '配置加载框架，支持 XML 配置、热更新、自定义转换器'
             }
         }
     }

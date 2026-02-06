@@ -1,10 +1,10 @@
-package com.muyi.gameconfig.entity;
+package com.muyi.config.entity;
 
-import com.muyi.gameconfig.ConfigConverter;
-import com.muyi.gameconfig.ConfigFile;
-import com.muyi.gameconfig.IConfig;
-import com.muyi.gameconfig.converter.IntListConverter;
-import com.muyi.gameconfig.converter.IntIntMapConverter;
+import com.muyi.config.ConfigConverter;
+import com.muyi.config.ConfigFile;
+import com.muyi.config.IConfig;
+import com.muyi.config.converter.IntListConverter;
+import com.muyi.config.converter.IntIntMapConverter;
 
 import java.util.List;
 import java.util.Map;
@@ -14,11 +14,11 @@ import java.util.Map;
  * 
  * 演示如何定义一个配置类，包含：
  * - 基础类型字段自动映射
- * - @ConfigConverter 自定义类型转换
+ * - @ConfigConverter 自定义类型转�?
  * - afterLoad() 生命周期方法
  * - validate() 数据校验
  * 
- * 对应 XML 示例：
+ * 对应 XML 示例�?
  * <pre>{@code
  * <?xml version="1.0" encoding="UTF-8"?>
  * <config>
@@ -41,7 +41,7 @@ public class ExampleConfig implements IConfig {
     /** 类型 */
     private int type;
     
-    /** 数值 */
+    /** 数�?*/
     private int value;
     
     /** 标签列表：XML 中为 "1,2,3" */
@@ -59,10 +59,10 @@ public class ExampleConfig implements IConfig {
     
     @Override
     public void afterLoad(Map<String, String> rawAttributes) {
-        // 自定义计算
+        // 自定义计�?
         this.computed = value * type;
         
-        // 可从 rawAttributes 获取未映射的属性
+        // 可从 rawAttributes 获取未映射的属�?
     }
     
     @Override

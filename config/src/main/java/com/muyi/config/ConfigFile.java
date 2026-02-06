@@ -1,4 +1,4 @@
-package com.muyi.gameconfig;
+package com.muyi.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,9 +7,9 @@ import java.lang.annotation.Target;
 
 /**
  * 配置文件注解
- * 标记配置类对应的文件名
+ * 标记配置类对应的文件�?
  * 
- * 使用示例：
+ * 使用示例�?
  * <pre>{@code
  * @ConfigFile("unit.xml")
  * public class UnitConfig implements IConfig {
@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 public @interface ConfigFile {
     
     /**
-     * 配置文件名（相对于 configRoot）
+     * 配置文件名（相对�?configRoot�?
      * 如果为空，则使用类名小写 + .xml
      * 例如：UnitConfig -> unit.xml
      */

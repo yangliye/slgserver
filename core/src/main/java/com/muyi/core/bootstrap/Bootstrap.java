@@ -182,7 +182,7 @@ public class Bootstrap {
      *   java -jar slgserver.jar
      *   java -jar slgserver.jar --config=xxx.yaml
      */
-    public static void main(String[] args) {
+    static void main(String[] args) {
         try {
             String configPath = "serverconfig/server.yaml";
             
