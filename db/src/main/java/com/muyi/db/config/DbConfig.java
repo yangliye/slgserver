@@ -32,6 +32,10 @@ public class DbConfig {
     private int landBatchSize = 400;       // 原 200，优化后 400
     private int landMaxRetries = 3;
 
+    // MySQL PreparedStatement 缓存
+    private int prepStmtCacheSize = 250;
+    private int prepStmtCacheSqlLimit = 2048;
+
     // 日志配置
     private boolean logSql = false;
 
@@ -73,8 +77,8 @@ public class DbConfig {
 
         // MySQL 优化配置
         config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("prepStmtCacheSize", String.valueOf(prepStmtCacheSize));
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", String.valueOf(prepStmtCacheSqlLimit));
         config.addDataSourceProperty("useServerPrepStmts", "true");
         config.addDataSourceProperty("useLocalSessionState", "true");
         config.addDataSourceProperty("rewriteBatchedStatements", "true");
@@ -180,6 +184,16 @@ public class DbConfig {
         return this;
     }
 
+    public DbConfig prepStmtCacheSize(int size) {
+        this.prepStmtCacheSize = size;
+        return this;
+    }
+
+    public DbConfig prepStmtCacheSqlLimit(int limit) {
+        this.prepStmtCacheSqlLimit = limit;
+        return this;
+    }
+
     public DbConfig logSql(boolean logSql) {
         this.logSql = logSql;
         return this;
@@ -200,5 +214,7 @@ public class DbConfig {
     public long getLandIntervalMs() { return landIntervalMs; }
     public int getLandBatchSize() { return landBatchSize; }
     public int getLandMaxRetries() { return landMaxRetries; }
+    public int getPrepStmtCacheSize() { return prepStmtCacheSize; }
+    public int getPrepStmtCacheSqlLimit() { return prepStmtCacheSqlLimit; }
     public boolean isLogSql() { return logSql; }
 }

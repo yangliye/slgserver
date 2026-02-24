@@ -44,9 +44,9 @@ public class RpcEncoder extends MessageToByteEncoder<RpcMessage> {
                 body = SerializerFactory.get(msg.getSerializeType()).serialize(msg.getData());
                 
                 // 检查序列化后的大小，防止 OOM
-                if (body.length > RpcProtocol.MAX_FRAME_LENGTH) {
+                if (body.length > RpcProtocol.getMaxFrameLength()) {
                     throw new IllegalArgumentException(
-                            "Serialized data too large: " + body.length + " bytes, max allowed: " + RpcProtocol.MAX_FRAME_LENGTH);
+                            "Serialized data too large: " + body.length + " bytes, max allowed: " + RpcProtocol.getMaxFrameLength());
                 }
             }
             

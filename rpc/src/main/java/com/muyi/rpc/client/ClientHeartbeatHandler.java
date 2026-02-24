@@ -30,7 +30,11 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
     private final AtomicInteger heartbeatFailCount = new AtomicInteger(0);
     
     /** 最大心跳失败次数 */
-    private static final int MAX_HEARTBEAT_FAIL = 3;
+    private final int maxHeartbeatFail;
+    
+    public ClientHeartbeatHandler(int maxHeartbeatFail) {
+        this.maxHeartbeatFail = maxHeartbeatFail;
+    }
     
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -54,7 +58,7 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
         if (evt instanceof IdleStateEvent event && event.state() == IdleState.WRITER_IDLE) {
             // 发送心跳
             int failCount = heartbeatFailCount.get();
-            if (failCount >= MAX_HEARTBEAT_FAIL) {
+            if (failCount >= maxHeartbeatFail) {
                 logger.warn("Heartbeat failed {} times, closing channel: {}", 
                         failCount, ctx.channel().remoteAddress());
                 ctx.close();

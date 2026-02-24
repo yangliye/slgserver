@@ -14,6 +14,7 @@ import com.muyi.rpc.codec.RpcDecoder;
 import com.muyi.rpc.codec.RpcEncoder;
 import com.muyi.rpc.core.ServiceKey;
 import com.muyi.rpc.registry.ServiceRegistry;
+import com.muyi.rpc.transport.SharedEventLoopGroup;
 import com.muyi.rpc.transport.TransportType;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -47,6 +48,9 @@ public class RpcServer {
     /** 服务端口 */
     private final int port;
     
+    /** 服务端配置 */
+    private final RpcServerConfig config;
+    
     /** 服务注册中心 */
     private ServiceRegistry registry;
     
@@ -59,11 +63,11 @@ public class RpcServer {
     /** Worker线程组 */
     private EventLoopGroup workerGroup;
     
+    /** 共享 EventLoopGroup（非 null 表示使用共享模式） */
+    private SharedEventLoopGroup sharedGroup;
+    
     /** 服务端Channel */
     private Channel serverChannel;
-    
-    /** 读超时时间（秒） */
-    private int readerIdleTime = 60;
     
     /** 服务端地址（注册到注册中心的地址） */
     private String serverAddress;
@@ -81,12 +85,12 @@ public class RpcServer {
     private final java.util.concurrent.atomic.AtomicBoolean closed = new java.util.concurrent.atomic.AtomicBoolean(false);
     
     public RpcServer(int port) {
-        this.port = port;
+        this(port, new RpcServerConfig());
     }
     
-    public RpcServer(int port, ServiceRegistry registry) {
+    public RpcServer(int port, RpcServerConfig config) {
         this.port = port;
-        this.registry = registry;
+        this.config = config != null ? config : new RpcServerConfig();
     }
     
     /**
@@ -164,54 +168,48 @@ public class RpcServer {
             throw new IllegalStateException("RPC Server [" + serverId + "] has been shutdown, cannot restart");
         }
         
-        // 根据平台选择最优实现
-        TransportType transport = TransportType.detect();
+        TransportType transport;
+        
+        if (sharedGroup != null) {
+            // 共享模式：使用外部提供的线程组
+            bossGroup = sharedGroup.bossGroup();
+            workerGroup = sharedGroup.workerGroup();
+            transport = sharedGroup.transport();
+            sharedGroup.acquire();
+            logger.info("Using shared EventLoopGroup, refCount={}", sharedGroup.refCount());
+        } else {
+            // 独立模式：自行创建线程组
+            transport = TransportType.detect();
+            bossGroup = transport.createEventLoopGroup(1);
+            workerGroup = transport.createEventLoopGroup(0);
+        }
+        
         Class<? extends ServerChannel> channelClass = transport.serverChannelClass();
-        
-        bossGroup = transport.createEventLoopGroup(1);
-        workerGroup = transport.createEventLoopGroup(0);
-        
         logger.info("Using transport: {} ({})", transport.name(), transport.description());
         
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)
                     .channel(channelClass)
-                    
-                    // ==================== 服务端 Socket 参数（option）====================
-                    // SO_BACKLOG: 全连接队列大小，等待 accept 的连接数
-                    // 高并发时需要调大，否则客户端可能收到 connection refused
-                    .option(ChannelOption.SO_BACKLOG, 4096)
-                    // SO_REUSEADDR: 允许重用 TIME_WAIT 状态的地址
-                    // 服务重启时可立即绑定端口，不用等待 2MSL
-                    .option(ChannelOption.SO_REUSEADDR, true)
-                    // 使用池化的 ByteBuf 分配器，减少 GC 压力
+                    .option(ChannelOption.SO_BACKLOG, config.getBacklog())
+                    .option(ChannelOption.SO_REUSEADDR, config.isReuseAddress())
                     .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    
-                    // ==================== 客户端连接参数（childOption）====================
-                    // SO_KEEPALIVE: TCP 心跳保活，检测死连接（默认 2 小时探测一次）
-                    .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    // TCP_NODELAY: 禁用 Nagle 算法，小包立即发送，降低延迟
-                    // 游戏/RPC 场景必开，否则会有 40ms 延迟
-                    .childOption(ChannelOption.TCP_NODELAY, true)
-                    // SO_SNDBUF: 发送缓冲区大小（256KB）
-                    .childOption(ChannelOption.SO_SNDBUF, 256 * 1024)
-                    // SO_RCVBUF: 接收缓冲区大小（256KB）
-                    .childOption(ChannelOption.SO_RCVBUF, 256 * 1024)
-                    // 使用池化的 ByteBuf 分配器
+                    .childOption(ChannelOption.SO_KEEPALIVE, config.isKeepAlive())
+                    .childOption(ChannelOption.TCP_NODELAY, config.isTcpNoDelay())
+                    .childOption(ChannelOption.SO_SNDBUF, config.getSendBufferSize())
+                    .childOption(ChannelOption.SO_RCVBUF, config.getReceiveBufferSize())
                     .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    // 写缓冲区水位线：低水位 64KB，高水位 128KB
-                    // 超过高水位时 channel.isWritable() 返回 false，防止 OOM
-                    .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, 
-                            new WriteBufferWaterMark(64 * 1024, 128 * 1024));
+                    .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK,
+                            new WriteBufferWaterMark(config.getWriteLowWaterMark(), config.getWriteHighWaterMark()));
             
             // Linux Epoll 专用优化
             if (transport.isEpoll()) {
                 bootstrap
-                        .option(EpollChannelOption.SO_REUSEPORT, true)      // 端口复用（多进程负载均衡）
-                        .childOption(EpollChannelOption.TCP_QUICKACK, true); // 快速 ACK
+                        .option(EpollChannelOption.SO_REUSEPORT, true)
+                        .childOption(EpollChannelOption.TCP_QUICKACK, true);
             }
             
+            int readerIdleTime = config.getReaderIdleTimeSeconds();
             bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
@@ -308,21 +306,27 @@ public class RpcServer {
             serverChannel.close();
         }
         
-        // 优雅关闭线程组，等待完成（最多等待 15 秒）
-        if (bossGroup != null) {
-            try {
-                bossGroup.shutdownGracefully().await(15, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.warn("Interrupted while waiting for bossGroup shutdown");
+        if (sharedGroup != null) {
+            // 共享模式：释放引用，由 SharedEventLoopGroup 统一管理生命周期
+            sharedGroup.release();
+        } else {
+            // 独立模式：自行关闭线程组
+            int timeout = config.getShutdownTimeoutSeconds();
+            if (bossGroup != null) {
+                try {
+                    bossGroup.shutdownGracefully().await(timeout, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.warn("Interrupted while waiting for bossGroup shutdown");
+                }
             }
-        }
-        if (workerGroup != null) {
-            try {
-                workerGroup.shutdownGracefully().await(15, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.warn("Interrupted while waiting for workerGroup shutdown");
+            if (workerGroup != null) {
+                try {
+                    workerGroup.shutdownGracefully().await(timeout, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.warn("Interrupted while waiting for workerGroup shutdown");
+                }
             }
         }
         
@@ -360,9 +364,12 @@ public class RpcServer {
         return this;
     }
     
-    public RpcServer readerIdleTime(int seconds) {
+    /**
+     * 使用共享 EventLoopGroup（多个 RpcServer 共享同一组线程）
+     */
+    public RpcServer sharedEventLoopGroup(SharedEventLoopGroup sharedGroup) {
         checkNotStarted();
-        this.readerIdleTime = seconds;
+        this.sharedGroup = sharedGroup;
         return this;
     }
     

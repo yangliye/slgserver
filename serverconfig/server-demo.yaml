@@ -1,0 +1,207 @@
+# ============================================================
+# SLG Server 完整配置示例
+# 所有参数均列出默认值，可按需修改
+# ============================================================
+
+# ==================== 全局服务器配置 ====================
+server:
+  # 主机地址（用于 RPC 注册，为空则自动获取本机 IP）
+  host:
+  
+  # SharedEventLoopGroup worker 线程数（0 = CPU 核心数）
+  rpcWorkerThreads: 0
+  
+  # RPC 协议最大消息长度（字节），0 = 使用默认值 16MB
+  rpcMaxFrameLength: 0
+  
+  # RPC 消息压缩阈值（字节），超过此大小自动压缩，0 = 使用默认值 1KB
+  rpcCompressThreshold: 0
+  
+  # HTTP 全局超时（秒），0 = 使用默认值
+  httpConnectTimeout: 0      # 默认 10s
+  httpReadTimeout: 0         # 默认 30s
+  httpWriteTimeout: 0        # 默认 30s
+
+# ==================== 基础设施配置 ====================
+infrastructure:
+  # ZooKeeper 连接地址
+  zookeeper: 127.0.0.1:2181
+  
+  # ZooKeeper 会话超时（毫秒）
+  zkSessionTimeout: 5000
+  
+  # ZooKeeper 连接超时（毫秒）
+  zkConnectionTimeout: 3000
+  
+  # ZooKeeper 重试策略
+  zkRetryInitialDelay: 1000  # 初始重试延迟（毫秒）
+  zkRetryMaxRetries: 3       # 最大重试次数
+  zkRetryMaxDelay: 5000      # 最大重试延迟（毫秒）
+  
+  # 全局 Redis 地址（格式: host:port 或 host:port:password:db）
+  redis: 127.0.0.1:6379
+
+# ==================== Redis 连接池配置 ====================
+redis:
+  maxTotal: 64               # 最大连接数
+  maxIdle: 16                # 最大空闲连接数
+  minIdle: 4                 # 最小空闲连接数
+  maxWaitSeconds: 3          # 获取连接最大等待时间（秒）
+  connectTimeout: 3000       # 连接超时（毫秒）
+
+# ==================== RPC 客户端全局默认配置 ====================
+# 每个模块实例会创建独立的 RpcClient，默认使用此全局配置
+# 可在 instances[].rpcClient 中按模块覆盖
+rpcClient:
+  # 连接管理
+  connectTimeout: 5000              # 连接超时（毫秒）
+  maxConnectionsPerAddress: 10      # 每个地址最大连接数
+  poolInitialConnections: 3         # 连接池初始连接数
+  shutdownTimeoutSeconds: 15        # 优雅关闭等待时间（秒）
+  
+  # 请求配置
+  requestTimeout: 10000             # 默认请求超时（毫秒）
+  retries: 1                        # 默认重试次数
+  retryInitialDelayMs: 100          # 重试初始延迟（毫秒），指数退避
+  retryMaxDelayMs: 2000             # 重试最大延迟（毫秒），指数退避
+  
+  # 心跳配置
+  heartbeatInterval: 30             # 心跳间隔（秒）
+  heartbeatMaxFailCount: 3          # 心跳最大失败次数，超过后断开连接
+  
+  # 缓冲区配置
+  sendBufferSize: 262144            # SO_SNDBUF 发送缓冲区（字节，256KB）
+  receiveBufferSize: 262144         # SO_RCVBUF 接收缓冲区（字节，256KB）
+  writeLowWaterMark: 65536          # 写缓冲区低水位线（字节，64KB）
+  writeHighWaterMark: 131072        # 写缓冲区高水位线（字节，128KB）
+  
+  # 时间轮配置（用于请求超时检测）
+  wheelTimerTickMs: 100             # tick 间隔（毫秒）
+  wheelTimerTicks: 512              # 槽数
+
+# ==================== 配置模块设置 ====================
+config:
+  configRoot: serverconfig/gamedata
+  configPackage: com.muyi.config.entity
+
+# ==================== 实例配置 ====================
+# 启动时按顺序加载所有实例
+instances:
+
+  # ---------- 配置模块 ----------
+  - module: config
+
+  # ---------- 登录服务 ----------
+  - module: login
+    serverId: 1
+    rpcPort: 10001
+    webPort: 18001
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_login?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+      # --- 以下为数据库扩展配置（可省略，使用默认值） ---
+      # maximumPoolSize: 10           # HikariCP 最大连接数
+      # minimumIdle: 5                # HikariCP 最小空闲连接
+      # connectionTimeout: 30000      # 连接超时（毫秒）
+      # idleTimeout: 600000           # 空闲超时（毫秒，10分钟）
+      # maxLifetime: 1800000          # 连接最大生存时间（毫秒，30分钟）
+      # prepStmtCacheSize: 250        # PreparedStatement 缓存大小
+      # prepStmtCacheSqlLimit: 2048   # PreparedStatement 缓存 SQL 长度限制
+      # landThreads: 4                # 异步落地线程数
+      # landIntervalMs: 25            # 异步落地间隔（毫秒）
+      # landBatchSize: 400            # 异步落地批量大小
+      # landMaxRetries: 3             # 异步落地最大重试次数
+      # logSql: false                 # 是否记录 SQL 日志
+
+  # ---------- 网关服务 ----------
+  - module: gate
+    serverId: 1
+    rpcPort: 10002
+    webPort: 18002
+
+  # ---------- 游戏服务（服务器1） ----------
+  - module: game
+    serverId: 1
+    rpcPort: 10003
+    webPort: 18003
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_game_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+      maximumPoolSize: 20
+      landThreads: 8
+      landBatchSize: 800
+    # --- RPC 服务端配置（可省略，使用默认值） ---
+    rpc:
+      backlog: 4096                   # SO_BACKLOG: 全连接队列大小
+      readerIdleTimeSeconds: 60       # 读空闲超时（秒），超时后关闭连接
+      sendBufferSize: 262144          # SO_SNDBUF 发送缓冲区（字节，256KB）
+      receiveBufferSize: 262144       # SO_RCVBUF 接收缓冲区（字节，256KB）
+      writeLowWaterMark: 65536        # 写缓冲区低水位线（字节，64KB）
+      writeHighWaterMark: 131072      # 写缓冲区高水位线（字节，128KB）
+      tcpNoDelay: true                # TCP_NODELAY: 禁用 Nagle 算法
+      keepAlive: true                 # SO_KEEPALIVE: TCP 保活
+      reuseAddress: true              # SO_REUSEADDR: 允许重用 TIME_WAIT 地址
+      shutdownTimeoutSeconds: 15      # 优雅关闭等待时间（秒）
+    # --- RPC 客户端配置（可省略，使用全局 rpcClient 默认值） ---
+    # game 模块需要频繁跨服调用，给更长的超时和更多重试
+    rpcClient:
+      requestTimeout: 15000           # 覆盖全局的 10000ms
+      retries: 2                      # 覆盖全局的 1 次
+      maxConnectionsPerAddress: 20    # 覆盖全局的 10
+
+  # ---------- 世界服务（服务器1） ----------
+  - module: world
+    serverId: 1
+    rpcPort: 10004
+    webPort: 18004
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_world_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+
+  # ---------- 联盟服务（服务器1） ----------
+  - module: alliance
+    serverId: 1
+    rpcPort: 10005
+    webPort: 18005
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_alliance_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+
+  # ---------- 游戏服务（服务器2）- 使用独立 Redis ----------
+  - module: game
+    serverId: 2
+    rpcPort: 10013
+    webPort: 18013
+    redis: 127.0.0.1:6380
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_game_2?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+
+  # ---------- 世界服务（服务器2） ----------
+  - module: world
+    serverId: 2
+    rpcPort: 10014
+    webPort: 18014
+    redis: 127.0.0.1:6380
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_world_2?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+
+  # ---------- 联盟服务（服务器2） ----------
+  - module: alliance
+    serverId: 2
+    rpcPort: 10015
+    webPort: 18015
+    redis: 127.0.0.1:6380
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_alliance_2?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
+    extra:
+      customKey: customValue

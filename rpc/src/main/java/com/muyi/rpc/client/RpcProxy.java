@@ -35,7 +35,8 @@ public class RpcProxy {
      * 创建服务代理（使用默认配置）
      */
     public <T> T create(Class<T> interfaceClass) {
-        return create(interfaceClass, 0, 5000, 2);
+        RpcClientConfig cfg = client.getConfig();
+        return create(interfaceClass, 0, cfg.getRequestTimeout(), cfg.getRetries());
     }
     
     /**
@@ -45,7 +46,8 @@ public class RpcProxy {
      * @param serverId       服务器ID（0 表示不指定，由负载均衡选择）
      */
     public <T> T create(Class<T> interfaceClass, int serverId) {
-        return create(interfaceClass, serverId, 5000, 2);
+        RpcClientConfig cfg = client.getConfig();
+        return create(interfaceClass, serverId, cfg.getRequestTimeout(), cfg.getRetries());
     }
     
     /**

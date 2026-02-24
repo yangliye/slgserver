@@ -5,8 +5,12 @@ import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.web.WebServer;
 import com.muyi.db.DbManager;
 import com.muyi.db.config.DbConfig;
+import com.muyi.rpc.client.RpcClientConfig;
+import com.muyi.rpc.client.RpcProxyManager;
 import com.muyi.rpc.registry.ZookeeperServiceRegistry;
 import com.muyi.rpc.server.RpcServer;
+import com.muyi.rpc.server.RpcServerConfig;
+import com.muyi.rpc.transport.SharedEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +28,10 @@ public abstract class AbstractGameModule implements GameModule {
     
     protected ModuleConfig config;
     protected RpcServer rpcServer;
+    protected RpcProxyManager rpcProxyManager;
     protected WebServer webServer;
     protected DbManager dbManager;
+    private ZookeeperServiceRegistry zkRegistry;
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     
@@ -34,21 +40,45 @@ public abstract class AbstractGameModule implements GameModule {
         this.config = config;
         log.info("[{}] Initializing module...", name());
         
-        // 初始化 RPC 服务
+        // 初始化 ZooKeeper 注册中心（Server 和 Client 共用）
+        String zkAddr = config.getZkAddress();
+        if (zkAddr != null && !zkAddr.isEmpty()) {
+            this.zkRegistry = new ZookeeperServiceRegistry(
+                    zkAddr,
+                    config.getZkSessionTimeout(),
+                    config.getZkConnectionTimeout(),
+                    "",
+                    config.getZkRetryInitialDelay(),
+                    config.getZkRetryMaxRetries(),
+                    config.getZkRetryMaxDelay());
+        }
+        
+        // 初始化 RPC 服务端
         int rpcPort = rpcPort();
         if (rpcPort > 0) {
-            this.rpcServer = new RpcServer(rpcPort);
+            this.rpcServer = new RpcServer(rpcPort, buildRpcServerConfig(config));
             rpcServer.serverId(config.getServerId());
+            rpcServer.sharedEventLoopGroup(SharedEventLoopGroup.getInstance());
             if (config.getHost() != null) {
                 rpcServer.host(config.getHost());
             }
-            // 自动关联 ZooKeeper 注册中心
-            String zkAddr = config.getZkAddress();
-            if (zkAddr != null && !zkAddr.isEmpty()) {
-                rpcServer.registry(new ZookeeperServiceRegistry(zkAddr));
+            if (zkRegistry != null) {
+                rpcServer.registry(zkRegistry);
             }
-            // 注册 RPC 服务
             registerRpcServices(rpcServer);
+        }
+        
+        // 初始化 RPC 客户端（有 ZK 地址就创建，用于调用其他模块的服务）
+        if (zkRegistry != null) {
+            RpcClientConfig clientConfig = config.getRpcClientConfig();
+            if (clientConfig == null) {
+                clientConfig = new RpcClientConfig();
+            }
+            this.rpcProxyManager = new RpcProxyManager()
+                    .discovery(zkRegistry)
+                    .clientConfig(clientConfig)
+                    .init();
+            log.info("[{}] RPC client initialized", name());
         }
         
         // 初始化 Redis（以 module-serverId 为实例名，相同地址复用）
@@ -63,10 +93,13 @@ public abstract class AbstractGameModule implements GameModule {
         // 初始化数据库
         String jdbcUrl = config.getJdbcUrl();
         if (jdbcUrl != null && !jdbcUrl.isEmpty()) {
-            DbConfig dbConfig = new DbConfig()
-                    .jdbcUrl(jdbcUrl)
-                    .username(config.getJdbcUser())
-                    .password(config.getJdbcPassword());
+            DbConfig dbConfig = config.getDbConfig();
+            if (dbConfig == null) {
+                dbConfig = new DbConfig()
+                        .jdbcUrl(jdbcUrl)
+                        .username(config.getJdbcUser())
+                        .password(config.getJdbcPassword());
+            }
             this.dbManager = new DbManager(dbConfig);
             log.info("[{}] Database initialized: {}", name(), jdbcUrl.replaceAll("\\?.*", ""));
         }
@@ -134,9 +167,19 @@ public abstract class AbstractGameModule implements GameModule {
             webServer.stop();
         }
         
-        // 停止 RPC 服务
+        // 关闭 RPC 客户端
+        if (rpcProxyManager != null) {
+            rpcProxyManager.shutdown();
+        }
+        
+        // 停止 RPC 服务端
         if (rpcServer != null) {
             rpcServer.shutdown();
+        }
+        
+        // 关闭 ZK 注册中心
+        if (zkRegistry != null) {
+            zkRegistry.shutdown();
         }
         
         log.info("[{}] Module stopped", name());
@@ -185,6 +228,30 @@ public abstract class AbstractGameModule implements GameModule {
     }
     
     /**
+     * 从 ModuleConfig 构建 RpcServerConfig
+     * 如果 YAML 中配置了完整的 rpcServerConfig 则直接使用，否则按兼容模式从散字段构建
+     */
+    private RpcServerConfig buildRpcServerConfig(ModuleConfig moduleConfig) {
+        if (moduleConfig.getRpcServerConfig() != null) {
+            return moduleConfig.getRpcServerConfig();
+        }
+        RpcServerConfig rpcConfig = new RpcServerConfig();
+        if (moduleConfig.getRpcBacklog() > 0) {
+            rpcConfig.backlog(moduleConfig.getRpcBacklog());
+        }
+        if (moduleConfig.getRpcReaderIdleTimeSeconds() > 0) {
+            rpcConfig.readerIdleTimeSeconds(moduleConfig.getRpcReaderIdleTimeSeconds());
+        }
+        if (moduleConfig.getRpcSendBufferSize() > 0) {
+            rpcConfig.sendBufferSize(moduleConfig.getRpcSendBufferSize());
+        }
+        if (moduleConfig.getRpcReceiveBufferSize() > 0) {
+            rpcConfig.receiveBufferSize(moduleConfig.getRpcReceiveBufferSize());
+        }
+        return rpcConfig;
+    }
+    
+    /**
      * 获取模块配置
      */
     protected ModuleConfig getConfig() {
@@ -196,6 +263,18 @@ public abstract class AbstractGameModule implements GameModule {
      */
     protected RpcServer getRpcServer() {
         return rpcServer;
+    }
+    
+    /**
+     * 获取 RPC 代理管理器（用于调用其他模块的服务）
+     *
+     * <pre>
+     * IWorldService worldService = getRpcProxy().get(IWorldService.class);
+     * IGameService game2 = getRpcProxy().get(IGameService.class, 2);
+     * </pre>
+     */
+    protected RpcProxyManager getRpcProxy() {
+        return rpcProxyManager;
     }
     
     /**

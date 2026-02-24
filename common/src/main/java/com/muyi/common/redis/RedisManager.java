@@ -43,6 +43,23 @@ public class RedisManager {
     private static final ConcurrentHashMap<String, RedisManager> INSTANCES = new ConcurrentHashMap<>();
     private static volatile String defaultName;
     
+    private static volatile int poolMaxTotal = 64;
+    private static volatile int poolMaxIdle = 16;
+    private static volatile int poolMinIdle = 4;
+    private static volatile int poolMaxWaitSeconds = 3;
+    private static volatile int poolConnectTimeout = 3000;
+    
+    /**
+     * 配置 Redis 连接池全局参数（在 register 之前调用）
+     */
+    public static void configure(int maxTotal, int maxIdle, int minIdle, int maxWaitSeconds, int connectTimeout) {
+        poolMaxTotal = maxTotal;
+        poolMaxIdle = maxIdle;
+        poolMinIdle = minIdle;
+        poolMaxWaitSeconds = maxWaitSeconds;
+        poolConnectTimeout = connectTimeout;
+    }
+    
     private final String name;
     private final JedisPool pool;
     
@@ -65,14 +82,14 @@ public class RedisManager {
      */
     public static RedisManager register(String name, String host, int port, String password, int database) {
         JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxTotal(64);
-        config.setMaxIdle(16);
-        config.setMinIdle(4);
-        config.setMaxWait(Duration.ofSeconds(3));
+        config.setMaxTotal(poolMaxTotal);
+        config.setMaxIdle(poolMaxIdle);
+        config.setMinIdle(poolMinIdle);
+        config.setMaxWait(Duration.ofSeconds(poolMaxWaitSeconds));
         config.setTestOnBorrow(true);
         
         boolean hasPassword = password != null && !password.isEmpty();
-        JedisPool pool = new JedisPool(config, host, port, 3000,
+        JedisPool pool = new JedisPool(config, host, port, poolConnectTimeout,
                 hasPassword ? password : null, database);
         
         RedisManager instance = new RedisManager(name, pool);

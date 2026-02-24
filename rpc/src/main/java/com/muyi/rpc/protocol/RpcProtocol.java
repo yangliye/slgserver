@@ -25,7 +25,15 @@ public class RpcProtocol {
     public static final int HEADER_LENGTH = 16;
     
     /**
-     * 最大消息长度（10MB）
+     * 最大消息长度（默认 10MB）
      */
-    public static final int MAX_FRAME_LENGTH = 10 * 1024 * 1024;
+    private static volatile int maxFrameLength = 10 * 1024 * 1024;
+    
+    public static int getMaxFrameLength() {
+        return maxFrameLength;
+    }
+    
+    public static void setMaxFrameLength(int maxFrameLength) {
+        RpcProtocol.maxFrameLength = maxFrameLength;
+    }
 }

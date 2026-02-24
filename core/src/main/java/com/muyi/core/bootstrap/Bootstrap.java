@@ -5,6 +5,7 @@ import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.config.ServerConfig;
 import com.muyi.core.config.ServerConfig.InstanceConfig;
 import com.muyi.core.module.GameModule;
+import com.muyi.rpc.transport.SharedEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,34 @@ public class Bootstrap {
         
         // 通过 SPI 发现模块
         registry.discoverModules();
+        
+        // 初始化共享 EventLoopGroup（所有 RPC Server 共用）
+        SharedEventLoopGroup.init(serverConfig.getRpcWorkerThreads());
+        
+        // 应用 RPC 全局配置
+        if (serverConfig.getRpcMaxFrameLength() > 0) {
+            com.muyi.rpc.protocol.RpcProtocol.setMaxFrameLength(serverConfig.getRpcMaxFrameLength());
+        }
+        if (serverConfig.getRpcCompressThreshold() > 0) {
+            com.muyi.rpc.compress.CompressorFactory.setCompressThreshold(serverConfig.getRpcCompressThreshold());
+        }
+        
+        // 应用 HTTP 全局配置
+        if (serverConfig.getHttpConnectTimeout() > 0 || serverConfig.getHttpReadTimeout() > 0 
+                || serverConfig.getHttpWriteTimeout() > 0) {
+            com.muyi.common.util.net.HttpUtils.configure(
+                    serverConfig.getHttpConnectTimeout() > 0 ? serverConfig.getHttpConnectTimeout() : 10,
+                    serverConfig.getHttpReadTimeout() > 0 ? serverConfig.getHttpReadTimeout() : 30,
+                    serverConfig.getHttpWriteTimeout() > 0 ? serverConfig.getHttpWriteTimeout() : 30);
+        }
+        
+        // 应用 Redis 连接池全局配置
+        RedisManager.configure(
+                serverConfig.getRedisMaxTotal(),
+                serverConfig.getRedisMaxIdle(),
+                serverConfig.getRedisMinIdle(),
+                serverConfig.getRedisMaxWaitSeconds(),
+                serverConfig.getRedisConnectTimeout());
         
         // 注册全局 Redis
         String globalRedis = serverConfig.getRedisAddress();
@@ -138,6 +167,9 @@ public class Bootstrap {
         }
         
         startedModules.clear();
+        
+        // 关闭共享 EventLoopGroup（兜底，确保所有 RpcServer 关闭后线程组被释放）
+        SharedEventLoopGroup.shutdownGlobal();
         
         // 关闭 Redis 连接池
         RedisManager.shutdownAll();

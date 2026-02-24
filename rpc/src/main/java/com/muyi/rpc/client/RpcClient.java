@@ -71,19 +71,9 @@ public class RpcClient {
     private final Bootstrap bootstrap;
 
     /**
-     * 连接超时时间（毫秒）
+     * 客户端配置
      */
-    private int connectTimeout = 5_000;
-
-    /**
-     * 心跳间隔（秒）
-     */
-    private int heartbeatInterval = 30;
-
-    /**
-     * 每个地址的最大连接数
-     */
-    private int maxConnectionsPerAddress = 10;
+    private final RpcClientConfig config;
 
     /**
      * 时间轮定时器（用于请求超时检测）
@@ -97,7 +87,12 @@ public class RpcClient {
     private final java.util.concurrent.atomic.AtomicBoolean shutdown = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     public RpcClient() {
-        // 根据平台选择最优实现
+        this(new RpcClientConfig());
+    }
+
+    public RpcClient(RpcClientConfig config) {
+        this.config = config;
+
         TransportType transport = TransportType.detect();
         
         this.eventLoopGroup = transport.createEventLoopGroup(0);
@@ -107,21 +102,19 @@ public class RpcClient {
                 .channel(transport.socketChannelClass())
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.SO_KEEPALIVE, true)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeout)
-                .option(ChannelOption.SO_SNDBUF, 256 * 1024)
-                .option(ChannelOption.SO_RCVBUF, 256 * 1024)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectTimeout())
+                .option(ChannelOption.SO_SNDBUF, config.getSendBufferSize())
+                .option(ChannelOption.SO_RCVBUF, config.getReceiveBufferSize())
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.WRITE_BUFFER_WATER_MARK, 
-                        new WriteBufferWaterMark(64 * 1024, 128 * 1024));
+                        new WriteBufferWaterMark(config.getWriteLowWaterMark(), config.getWriteHighWaterMark()));
 
         logger.info("RpcClient using transport: {} ({})", transport.name(), transport.description());
 
-        // 使用时间轮管理超时（tick=100ms，每轮512个槽，适合秒级超时）
-        // 相比遍历所有 pending futures，时间轮复杂度 O(1)
         wheelTimer = new HashedWheelTimer(
                 Thread.ofVirtual().name("rpc-wheel-timer-", 0).factory(),
-                100, TimeUnit.MILLISECONDS,
-                512
+                config.getWheelTimerTickMs(), TimeUnit.MILLISECONDS,
+                config.getWheelTimerTicks()
         );
     }
 
@@ -284,7 +277,7 @@ public class RpcClient {
             throw new IllegalArgumentException("Invalid port in address: " + address, e);
         }
         
-        return new ChannelPool(host, port, maxConnectionsPerAddress, bootstrap, heartbeatInterval, this);
+        return new ChannelPool(host, port, config, bootstrap, this);
     }
 
     /**
@@ -327,9 +320,8 @@ public class RpcClient {
         }
         pendingFutures.clear();
 
-        // 关闭EventLoopGroup（等待完成，最多 15 秒）
         try {
-            eventLoopGroup.shutdownGracefully().await(15, TimeUnit.SECONDS);
+            eventLoopGroup.shutdownGracefully().await(config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.warn("Interrupted while waiting for eventLoopGroup shutdown");
@@ -368,22 +360,7 @@ public class RpcClient {
         return this;
     }
 
-    public RpcClient connectTimeout(int timeout) {
-        checkNotShutdown();
-        this.connectTimeout = timeout;
-        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout);
-        return this;
-    }
-
-    public RpcClient heartbeatInterval(int seconds) {
-        checkNotShutdown();
-        this.heartbeatInterval = seconds;
-        return this;
-    }
-
-    public RpcClient maxConnectionsPerAddress(int max) {
-        checkNotShutdown();
-        this.maxConnectionsPerAddress = max;
-        return this;
+    public RpcClientConfig getConfig() {
+        return config;
     }
 }

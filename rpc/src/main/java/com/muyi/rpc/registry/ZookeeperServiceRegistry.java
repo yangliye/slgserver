@@ -119,11 +119,28 @@ public class ZookeeperServiceRegistry implements ServiceRegistry, ServiceDiscove
      */
     public ZookeeperServiceRegistry(String connectString, int sessionTimeout, 
                                      int connectionTimeout, String namespace) {
+        this(connectString, sessionTimeout, connectionTimeout, namespace, 1000, 3, 5000);
+    }
+    
+    /**
+     * 创建ZooKeeper注册中心（完整参数）
+     *
+     * @param connectString       ZooKeeper连接地址
+     * @param sessionTimeout      会话超时时间（毫秒）
+     * @param connectionTimeout   连接超时时间（毫秒）
+     * @param namespace           命名空间（可选，用于环境隔离）
+     * @param retryInitialDelay   重试初始延迟（毫秒）
+     * @param retryMaxRetries     最大重试次数
+     * @param retryMaxDelay       重试最大延迟（毫秒）
+     */
+    public ZookeeperServiceRegistry(String connectString, int sessionTimeout, 
+                                     int connectionTimeout, String namespace,
+                                     int retryInitialDelay, int retryMaxRetries, int retryMaxDelay) {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
                 .connectString(connectString)
                 .sessionTimeoutMs(sessionTimeout)
                 .connectionTimeoutMs(connectionTimeout)
-                .retryPolicy(new ExponentialBackoffRetry(1000, 3, 5000));
+                .retryPolicy(new ExponentialBackoffRetry(retryInitialDelay, retryMaxRetries, retryMaxDelay));
         
         if (namespace != null && !namespace.isEmpty()) {
             builder.namespace(namespace);

@@ -72,17 +72,8 @@ public class RpcProxyManager {
     /** 是否已关闭 */
     private volatile boolean shutdown = false;
     
-    /** 请求超时（毫秒） */
-    private long requestTimeout = 10_000;
-    
-    /** 连接超时（毫秒） */
-    private int connectTimeout = 3_000;
-    
-    /** 重试次数 */
-    private int retries = 0;
-    
-    /** 每个地址最大连接数 */
-    private int maxConnectionsPerAddress = 10;
+    /** 客户端配置 */
+    private RpcClientConfig clientConfig = new RpcClientConfig();
     
     /**
      * 设置服务发现
@@ -93,34 +84,12 @@ public class RpcProxyManager {
     }
     
     /**
-     * 设置请求超时
+     * 设置客户端配置
      */
-    public RpcProxyManager requestTimeout(long timeout) {
-        this.requestTimeout = timeout;
-        return this;
-    }
-    
-    /**
-     * 设置连接超时
-     */
-    public RpcProxyManager connectTimeout(int timeout) {
-        this.connectTimeout = timeout;
-        return this;
-    }
-    
-    /**
-     * 设置重试次数
-     */
-    public RpcProxyManager retries(int retries) {
-        this.retries = retries;
-        return this;
-    }
-    
-    /**
-     * 设置每个地址最大连接数
-     */
-    public RpcProxyManager maxConnectionsPerAddress(int max) {
-        this.maxConnectionsPerAddress = max;
+    public RpcProxyManager clientConfig(RpcClientConfig config) {
+        if (config != null) {
+            this.clientConfig = config;
+        }
         return this;
     }
     
@@ -139,10 +108,8 @@ public class RpcProxyManager {
             throw new IllegalStateException("ServiceDiscovery is required. Call discovery() first.");
         }
         
-        rpcClient = new RpcClient()
-                .discovery(discovery)
-                .connectTimeout(connectTimeout)
-                .maxConnectionsPerAddress(maxConnectionsPerAddress);
+        rpcClient = new RpcClient(clientConfig)
+                .discovery(discovery);
         
         rpcProxy = new RpcProxy(rpcClient);
         serviceSelector = new ServiceSelector(discovery);
@@ -202,7 +169,7 @@ public class RpcProxyManager {
             // serverId=0 表示负载均衡，代理内部每次调用会重新选择地址，可以安全缓存
             return (T) proxyCache.computeIfAbsent(cacheKey, key -> {
                 logger.info("[RpcProxyManager] Creating load-balance proxy for: {}", cacheKey);
-                return rpcProxy.create(serviceClass, serverId, requestTimeout, retries);
+                return rpcProxy.create(serviceClass, serverId, clientConfig.getRequestTimeout(), clientConfig.getRetries());
             });
         } else {
             // 指定 serverId 时，先检查服务是否可用
@@ -214,7 +181,7 @@ public class RpcProxyManager {
             // 缓存指定 serverId 的代理
             return (T) proxyCache.computeIfAbsent(cacheKey, key -> {
                 logger.info("[RpcProxyManager] Creating proxy for: {}", cacheKey);
-                return rpcProxy.create(serviceClass, serverId, requestTimeout, retries);
+                return rpcProxy.create(serviceClass, serverId, clientConfig.getRequestTimeout(), clientConfig.getRetries());
             });
         }
     }
@@ -224,7 +191,7 @@ public class RpcProxyManager {
      * 注意：需要与 RpcProxy 中的缓存 key 格式一致，包含 timeout 和 retries
      */
     private String buildCacheKey(Class<?> serviceClass, int serverId) {
-        return serviceClass.getName() + "#" + serverId + "#" + requestTimeout + "#" + retries;
+        return serviceClass.getName() + "#" + serverId + "#" + clientConfig.getRequestTimeout() + "#" + clientConfig.getRetries();
     }
     
     // ==================== SLG 游戏便捷 API ====================

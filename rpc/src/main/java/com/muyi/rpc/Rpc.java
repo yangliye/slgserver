@@ -1,5 +1,6 @@
 package com.muyi.rpc;
 
+import com.muyi.rpc.client.RpcClientConfig;
 import com.muyi.rpc.client.RpcProxyManager;
 import com.muyi.rpc.compress.Compressor;
 import com.muyi.rpc.compress.CompressorFactory;
@@ -8,6 +9,7 @@ import com.muyi.rpc.registry.ZookeeperServiceRegistry;
 import com.muyi.rpc.serialize.Serializer;
 import com.muyi.rpc.serialize.SerializerFactory;
 import com.muyi.rpc.server.RpcServer;
+import com.muyi.rpc.server.RpcServerConfig;
 
 /**
  * RPC 框架统一入口
@@ -210,8 +212,7 @@ public final class Rpc {
                     clientRegistry = new ZookeeperServiceRegistry(zkAddress);
                     client = new RpcProxyManager()
                             .discovery(clientRegistry)
-                            .requestTimeout(10_000)
-                            .retries(1)
+                            .clientConfig(new RpcClientConfig().requestTimeout(10_000).retries(1))
                             .init();
                 }
             }
@@ -450,10 +451,9 @@ public final class Rpc {
                 registry.setWeight(weight);
                 registry.setServerId(String.valueOf(serverId));
                 
-                server = new RpcServer(port)
+                server = new RpcServer(port, new RpcServerConfig().readerIdleTimeSeconds(idleTimeout))
                         .registry(registry)
-                        .serverId(serverId)
-                        .readerIdleTime(idleTimeout);
+                        .serverId(serverId);
                 
                 if (host != null) {
                     server.host(host);
@@ -505,12 +505,15 @@ public final class Rpc {
             
             ZookeeperServiceRegistry registry = new ZookeeperServiceRegistry(zkAddress);
             
-            RpcProxyManager manager = new RpcProxyManager()
-                    .discovery(registry)
+            RpcClientConfig clientConfig = new RpcClientConfig()
                     .requestTimeout(timeout)
                     .retries(retries)
                     .connectTimeout(connectTimeout)
-                    .maxConnectionsPerAddress(maxConnections)
+                    .maxConnectionsPerAddress(maxConnections);
+            
+            RpcProxyManager manager = new RpcProxyManager()
+                    .discovery(registry)
+                    .clientConfig(clientConfig)
                     .init();
             
             // 保存 registry 引用，在 manager shutdown 时会通过 discovery 的 shutdown 方法关闭
@@ -533,12 +536,15 @@ public final class Rpc {
             
             ZookeeperServiceRegistry registry = new ZookeeperServiceRegistry(zkAddress);
             
-            RpcProxyManager manager = new RpcProxyManager()
-                    .discovery(registry)
+            RpcClientConfig clientConfig = new RpcClientConfig()
                     .requestTimeout(timeout)
                     .retries(retries)
                     .connectTimeout(connectTimeout)
-                    .maxConnectionsPerAddress(maxConnections)
+                    .maxConnectionsPerAddress(maxConnections);
+            
+            RpcProxyManager manager = new RpcProxyManager()
+                    .discovery(registry)
+                    .clientConfig(clientConfig)
                     .init();
             
             return new ClientConnection(manager, registry);

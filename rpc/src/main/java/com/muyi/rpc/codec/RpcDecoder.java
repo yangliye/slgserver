@@ -36,7 +36,7 @@ public class RpcDecoder extends LengthFieldBasedFrameDecoder {
     
     public RpcDecoder() {
         super(
-            RpcProtocol.MAX_FRAME_LENGTH,  // 最大帧长度
+            RpcProtocol.getMaxFrameLength(),  // 最大帧长度
             12,                             // 长度字段偏移量（魔数1+序列化1+压缩1+消息类型1+消息ID8=12）
             4,                              // 长度字段长度
             0,                              // 长度调整
@@ -97,9 +97,9 @@ public class RpcDecoder extends LengthFieldBasedFrameDecoder {
             if (compressType != Compressor.NONE) {
                 body = CompressorFactory.get(compressType).decompress(body);
                 // 校验解压后大小，防止压缩炸弹攻击
-                if (body.length > RpcProtocol.MAX_FRAME_LENGTH) {
+                if (body.length > RpcProtocol.getMaxFrameLength()) {
                     throw new IllegalArgumentException(
-                            "Decompressed data too large: " + body.length + " bytes, max allowed: " + RpcProtocol.MAX_FRAME_LENGTH);
+                            "Decompressed data too large: " + body.length + " bytes, max allowed: " + RpcProtocol.getMaxFrameLength());
                 }
                 if (logger.isDebugEnabled()) {
                     logger.debug("Decompress: {} -> {} bytes", bodyLength, body.length);

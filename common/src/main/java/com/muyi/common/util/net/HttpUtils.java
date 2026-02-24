@@ -19,24 +19,27 @@ public final class HttpUtils {
     
     private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
     
-    /** 默认超时时间（秒） */
-    private static final int DEFAULT_CONNECT_TIMEOUT = 10;
-    private static final int DEFAULT_READ_TIMEOUT = 30;
-    private static final int DEFAULT_WRITE_TIMEOUT = 30;
+    /** 超时配置（秒） */
+    private static volatile int connectTimeoutSeconds = 10;
+    private static volatile int readTimeoutSeconds = 30;
+    private static volatile int writeTimeoutSeconds = 30;
     
     /** JSON 媒体类型 */
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     /** Form 媒体类型 */
     public static final MediaType FORM = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
     
-    /** 全局 OkHttpClient 实例持有者（静态内部类实现懒加载单例） */
-    private static class ClientHolder {
-        static OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(DEFAULT_CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                .readTimeout(DEFAULT_READ_TIMEOUT, TimeUnit.SECONDS)
-                .writeTimeout(DEFAULT_WRITE_TIMEOUT, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true)
-                .build();
+    /** 全局 OkHttpClient 实例 */
+    private static volatile OkHttpClient client;
+    
+    /**
+     * 配置 HTTP 超时参数（在首次使用前调用）
+     */
+    public static void configure(int connectTimeout, int readTimeout, int writeTimeout) {
+        connectTimeoutSeconds = connectTimeout;
+        readTimeoutSeconds = readTimeout;
+        writeTimeoutSeconds = writeTimeout;
+        client = null; // 重置，下次 getClient 时重建
     }
     
     private HttpUtils() {
@@ -44,17 +47,32 @@ public final class HttpUtils {
     }
     
     /**
-     * 获取 OkHttpClient 实例（单例）
+     * 获取 OkHttpClient 实例（单例，懒加载）
      */
     public static OkHttpClient getClient() {
-        return ClientHolder.client;
+        OkHttpClient local = client;
+        if (local == null) {
+            synchronized (HttpUtils.class) {
+                local = client;
+                if (local == null) {
+                    local = new OkHttpClient.Builder()
+                            .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
+                            .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+                            .writeTimeout(writeTimeoutSeconds, TimeUnit.SECONDS)
+                            .retryOnConnectionFailure(true)
+                            .build();
+                    client = local;
+                }
+            }
+        }
+        return local;
     }
     
     /**
      * 自定义 OkHttpClient
      */
     public static void setClient(OkHttpClient customClient) {
-        ClientHolder.client = customClient;
+        client = customClient;
     }
     
     // ==================== GET 请求 ====================

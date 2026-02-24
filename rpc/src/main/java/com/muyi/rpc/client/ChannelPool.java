@@ -32,6 +32,7 @@ public class ChannelPool {
     private final String host;
     private final int port;
     private final int maxConnections;
+    private final int initialConnections;
     /** 
      * 使用 AtomicReferenceArray 替代 CopyOnWriteArrayList
      * 避免写操作时复制整个数组，提升连接重建时的性能
@@ -46,16 +47,19 @@ public class ChannelPool {
     
     private final Bootstrap bootstrap;
     private final int heartbeatInterval;
+    private final int heartbeatMaxFailCount;
     private final RpcClient rpcClient;
     
-    public ChannelPool(String host, int port, int maxConnections, 
-                       Bootstrap bootstrap, int heartbeatInterval, RpcClient rpcClient) {
+    public ChannelPool(String host, int port, RpcClientConfig config,
+                       Bootstrap bootstrap, RpcClient rpcClient) {
         this.host = host;
         this.port = port;
-        this.maxConnections = maxConnections;
+        this.maxConnections = config.getMaxConnectionsPerAddress();
+        this.initialConnections = config.getPoolInitialConnections();
         this.channels = new AtomicReferenceArray<>(maxConnections);
         this.bootstrap = bootstrap;
-        this.heartbeatInterval = heartbeatInterval;
+        this.heartbeatInterval = config.getHeartbeatInterval();
+        this.heartbeatMaxFailCount = config.getHeartbeatMaxFailCount();
         this.rpcClient = rpcClient;
     }
     
@@ -132,7 +136,7 @@ public class ChannelPool {
     
     private void initConnections() throws Exception {
         // 初始化时创建指定数量的连接
-        int toCreate = Math.min(maxConnections, 3); // 初始创建少量连接
+        int toCreate = Math.min(maxConnections, initialConnections);
         int created = 0;
         Exception lastException = null;
         
@@ -171,7 +175,7 @@ public class ChannelPool {
                         pipeline.addLast(new IdleStateHandler(0, heartbeatInterval, 0, TimeUnit.SECONDS));
                         pipeline.addLast(new RpcDecoder());
                         pipeline.addLast(new RpcEncoder());
-                        pipeline.addLast(new ClientHeartbeatHandler());
+                        pipeline.addLast(new ClientHeartbeatHandler(heartbeatMaxFailCount));
                         pipeline.addLast(new ClientHandler(rpcClient));
                     }
                 })

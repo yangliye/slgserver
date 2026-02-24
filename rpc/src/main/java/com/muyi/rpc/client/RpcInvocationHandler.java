@@ -31,6 +31,8 @@ public class RpcInvocationHandler implements InvocationHandler {
     private final long timeout;
     private final int retries;
     private final RpcClient client;
+    private final long retryInitialDelayMs;
+    private final long retryMaxDelayMs;
     
     public RpcInvocationHandler(Class<?> interfaceClass, int serverId,
                                 long timeout, int retries, RpcClient client) {
@@ -38,6 +40,9 @@ public class RpcInvocationHandler implements InvocationHandler {
         this.serverId = serverId;
         this.timeout = timeout;
         this.retries = retries;
+        RpcClientConfig cfg = client.getConfig();
+        this.retryInitialDelayMs = cfg.getRetryInitialDelayMs();
+        this.retryMaxDelayMs = cfg.getRetryMaxDelayMs();
         this.client = client;
     }
     
@@ -99,18 +104,13 @@ public class RpcInvocationHandler implements InvocationHandler {
         return invokeSync(request, methodTimeout, methodRetries);
     }
     
-    /** 初始重试延迟（毫秒） */
-    private static final long INITIAL_RETRY_DELAY_MS = 100;
-    /** 最大重试延迟（毫秒） */
-    private static final long MAX_RETRY_DELAY_MS = 2000;
-    
     /**
      * 同步调用（带重试，使用指数退避）
      * 注意：每次重试创建新的 RpcRequest（新的 requestId），避免响应混淆
      */
     private Object invokeSync(RpcRequest request, long timeout, int retries) throws Exception {
         Exception lastException = null;
-        long delay = INITIAL_RETRY_DELAY_MS;
+        long delay = retryInitialDelayMs;
         
         for (int i = 0; i <= retries; i++) {
             try {
@@ -125,7 +125,7 @@ public class RpcInvocationHandler implements InvocationHandler {
                     try {
                         Thread.sleep(delay);
                         // 指数退避，但不超过最大值
-                        delay = Math.min(delay * 2, MAX_RETRY_DELAY_MS);
+                        delay = Math.min(delay * 2, retryMaxDelayMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw e; // 中断时直接抛出原异常
