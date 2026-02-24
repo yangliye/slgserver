@@ -1,5 +1,6 @@
 package com.muyi.core.config;
 
+import com.muyi.rpc.server.RpcServerConfig;
 import org.yaml.snakeyaml.Yaml;
 
 import com.muyi.db.config.DbConfig;
@@ -447,7 +448,7 @@ public class ServerConfig {
         public int rpcBacklog;
         
         /** RPC 服务端完整配置 */
-        public com.muyi.rpc.server.RpcServerConfig rpcServerConfig;
+        public RpcServerConfig rpcServerConfig;
         
         /** RPC 客户端配置（实例级，为 null 时使用全局） */
         public RpcClientConfig rpcClientConfig;
