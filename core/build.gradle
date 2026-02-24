@@ -20,6 +20,9 @@ dependencies {
     // RPC框架
     api project(':rpc')
     
+    // 数据库框架
+    api project(':db')
+    
     // Javalin - 轻量级Web框架
     api 'io.javalin:javalin:6.4.0'
     

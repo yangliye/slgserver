@@ -3,6 +3,8 @@ package com.muyi.core.module;
 import com.muyi.common.redis.RedisManager;
 import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.web.WebServer;
+import com.muyi.db.DbManager;
+import com.muyi.db.config.DbConfig;
 import com.muyi.rpc.registry.ZookeeperServiceRegistry;
 import com.muyi.rpc.server.RpcServer;
 import org.slf4j.Logger;
@@ -23,6 +25,7 @@ public abstract class AbstractGameModule implements GameModule {
     protected ModuleConfig config;
     protected RpcServer rpcServer;
     protected WebServer webServer;
+    protected DbManager dbManager;
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     
@@ -55,6 +58,17 @@ public abstract class AbstractGameModule implements GameModule {
             if (!RedisManager.hasInstance(redisName)) {
                 RedisManager.register(redisName, redisAddr);
             }
+        }
+        
+        // 初始化数据库
+        String jdbcUrl = config.getJdbcUrl();
+        if (jdbcUrl != null && !jdbcUrl.isEmpty()) {
+            DbConfig dbConfig = new DbConfig()
+                    .jdbcUrl(jdbcUrl)
+                    .username(config.getJdbcUser())
+                    .password(config.getJdbcPassword());
+            this.dbManager = new DbManager(dbConfig);
+            log.info("[{}] Database initialized: {}", name(), jdbcUrl.replaceAll("\\?.*", ""));
         }
         
         // 初始化 Web 服务
@@ -109,6 +123,11 @@ public abstract class AbstractGameModule implements GameModule {
         
         // 子类自定义停止
         doStop();
+        
+        // 关闭数据库（等待异步落地完成）
+        if (dbManager != null) {
+            dbManager.shutdown();
+        }
         
         // 停止 Web 服务
         if (webServer != null) {
@@ -184,6 +203,13 @@ public abstract class AbstractGameModule implements GameModule {
      */
     protected WebServer getWebServer() {
         return webServer;
+    }
+    
+    /**
+     * 获取数据库管理器
+     */
+    protected DbManager getDb() {
+        return dbManager;
     }
     
     /**
