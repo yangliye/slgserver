@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,31 +96,8 @@ public class RpcServer {
      * @param service 服务实例
      */
     public void registerService(Object service) {
-        Class<?> clazz = service.getClass();
-        RpcService annotation = clazz.getAnnotation(RpcService.class);
-        
-        String interfaceName;
-        
-        if (annotation != null) {
-            Class<?> interfaceClass = annotation.value();
-            if (interfaceClass == void.class) {
-                Class<?>[] interfaces = clazz.getInterfaces();
-                if (interfaces.length == 0) {
-                    throw new IllegalArgumentException("Service must implement an interface");
-                }
-                interfaceClass = interfaces[0];
-            }
-            interfaceName = interfaceClass.getName();
-        } else {
-            Class<?>[] interfaces = clazz.getInterfaces();
-            if (interfaces.length == 0) {
-                throw new IllegalArgumentException("Service must implement an interface");
-            }
-            interfaceName = interfaces[0].getName();
-        }
-        
-        String serviceKey = ServiceKey.build(interfaceName, serverId);
-        
+        String serviceKey = getServiceKey(service);
+
         // 检查是否重复注册
         Object existing = serviceMap.put(serviceKey, service);
         if (existing != null) {
@@ -138,7 +116,34 @@ public class RpcServer {
             }
         }
     }
-    
+
+    private @NonNull String getServiceKey(Object service) {
+        Class<?> clazz = service.getClass();
+        RpcService annotation = clazz.getAnnotation(RpcService.class);
+
+        String interfaceName;
+
+        if (annotation != null) {
+            Class<?> interfaceClass = annotation.value();
+            if (interfaceClass == void.class) {
+                Class<?>[] interfaces = clazz.getInterfaces();
+                if (interfaces.length == 0) {
+                    throw new IllegalArgumentException("Service must implement an interface");
+                }
+                interfaceClass = interfaces[0];
+            }
+            interfaceName = interfaceClass.getName();
+        } else {
+            Class<?>[] interfaces = clazz.getInterfaces();
+            if (interfaces.length == 0) {
+                throw new IllegalArgumentException("Service must implement an interface");
+            }
+            interfaceName = interfaces[0].getName();
+        }
+
+        return ServiceKey.build(interfaceName, serverId);
+    }
+
     /**
      * 获取服务实例
      */

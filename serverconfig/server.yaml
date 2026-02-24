@@ -9,12 +9,6 @@ infrastructure:
   zookeeper: 127.0.0.1:2181
   redis: 127.0.0.1:6379
 
-# 数据库配置
-database:
-  url: jdbc:mysql://127.0.0.1:3306/slg_game?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
-  user: root
-  password: 123456
-
 # 配置模块设置
 config:
   configRoot: serverconfig/gamedata
@@ -23,13 +17,16 @@ config:
 # ==================== 实例配置 ====================
 # 启动时按顺序加载所有实例
 instances:
-  # 配置模块（放在最前面，需要时配置）
   - module: config
 
   - module: login
     serverId: 1
     rpcPort: 10001
     webPort: 18001
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_login?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
 
   - module: gate
     serverId: 1
@@ -40,29 +37,56 @@ instances:
     serverId: 1
     rpcPort: 10003
     webPort: 18003
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_game_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
 
   - module: world
     serverId: 1
     rpcPort: 10004
     webPort: 18004
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_world_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
 
   - module: alliance
     serverId: 1
     rpcPort: 10005
     webPort: 18005
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_alliance_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
 
   # 第二组服务器
   - module: game
     serverId: 2
     rpcPort: 10013
     webPort: 18013
+    redis: 127.0.0.1:6380
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_game_2?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
 
   - module: world
     serverId: 2
     rpcPort: 10014
     webPort: 18014
+    redis: 127.0.0.1:6380
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_world_2?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456
 
   - module: alliance
     serverId: 2
     rpcPort: 10015
     webPort: 18015
+    redis: 127.0.0.1:6380
+    database:
+      url: jdbc:mysql://127.0.0.1:3306/slg_alliance_2?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      user: root
+      password: 123456

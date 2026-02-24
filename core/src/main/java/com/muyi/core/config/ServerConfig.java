@@ -30,13 +30,8 @@ public class ServerConfig {
     /** ZooKeeper 地址 */
     private String zkAddress = "127.0.0.1:2181";
     
-    /** Redis 地址 */
-    private String redisAddress = "127.0.0.1:6379";
-    
-    /** 数据库配置 */
-    private String jdbcUrl;
-    private String jdbcUser;
-    private String jdbcPassword;
+    /** 全局 Redis 地址 */
+    private String redisAddress;
     
     /** 实例配置列表 */
     private List<InstanceConfig> instances = new ArrayList<>();
@@ -82,13 +77,7 @@ public class ServerConfig {
         // 基础设施配置
         Map<String, Object> infra = (Map<String, Object>) data.getOrDefault("infrastructure", new HashMap<>());
         config.zkAddress = (String) infra.getOrDefault("zookeeper", "127.0.0.1:2181");
-        config.redisAddress = (String) infra.getOrDefault("redis", "127.0.0.1:6379");
-        
-        // 数据库配置
-        Map<String, Object> db = (Map<String, Object>) data.getOrDefault("database", new HashMap<>());
-        config.jdbcUrl = (String) db.get("url");
-        config.jdbcUser = (String) db.get("user");
-        config.jdbcPassword = (String) db.get("password");
+        config.redisAddress = (String) infra.get("redis");
         
         // 实例配置
         List<Map<String, Object>> instancesData = (List<Map<String, Object>>) data.get("instances");
@@ -99,6 +88,17 @@ public class ServerConfig {
                 inst.serverId = ((Number) instData.getOrDefault("serverId", 1)).intValue();
                 inst.rpcPort = ((Number) instData.getOrDefault("rpcPort", 0)).intValue();
                 inst.webPort = ((Number) instData.getOrDefault("webPort", 0)).intValue();
+                
+                // Redis 配置
+                inst.redisAddress = (String) instData.get("redis");
+                
+                // 数据库配置
+                Map<String, Object> dbData = (Map<String, Object>) instData.get("database");
+                if (dbData != null) {
+                    inst.jdbcUrl = (String) dbData.get("url");
+                    inst.jdbcUser = (String) dbData.get("user");
+                    inst.jdbcPassword = (String) dbData.get("password");
+                }
                 
                 // 扩展配置
                 Map<String, Object> extraData = (Map<String, Object>) instData.get("extra");
@@ -128,10 +128,10 @@ public class ServerConfig {
                 .rpcPort(instance.rpcPort)
                 .webPort(instance.webPort)
                 .zkAddress(zkAddress)
-                .redisAddress(redisAddress)
-                .jdbcUrl(jdbcUrl)
-                .jdbcUser(jdbcUser)
-                .jdbcPassword(jdbcPassword)
+                .redisAddress(instance.redisAddress)
+                .jdbcUrl(instance.jdbcUrl)
+                .jdbcUser(instance.jdbcUser)
+                .jdbcPassword(instance.jdbcPassword)
                 .extras(instance.extra);
         
         // config 模块的特殊配置
@@ -204,6 +204,14 @@ public class ServerConfig {
         
         /** Web 端口 */
         public int webPort;
+        
+        /** Redis 地址（host:port 或 host:port:password） */
+        public String redisAddress;
+        
+        /** 数据库配置 */
+        public String jdbcUrl;
+        public String jdbcUser;
+        public String jdbcPassword;
         
         /** 扩展配置 */
         public Map<String, Object> extra = new HashMap<>();

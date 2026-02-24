@@ -1,5 +1,6 @@
 package com.muyi.core.bootstrap;
 
+import com.muyi.common.redis.RedisManager;
 import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.config.ServerConfig;
 import com.muyi.core.config.ServerConfig.InstanceConfig;
@@ -50,6 +51,12 @@ public class Bootstrap {
         
         // 通过 SPI 发现模块
         registry.discoverModules();
+        
+        // 注册全局 Redis
+        String globalRedis = serverConfig.getRedisAddress();
+        if (globalRedis != null && !globalRedis.isEmpty()) {
+            RedisManager.register("global", globalRedis);
+        }
         
         // 按配置顺序启动所有实例
         for (InstanceConfig instance : serverConfig.getInstances()) {
@@ -131,6 +138,9 @@ public class Bootstrap {
         }
         
         startedModules.clear();
+        
+        // 关闭 Redis 连接池
+        RedisManager.shutdownAll();
         
         log.info("========================================");
         log.info("  SLG Server Stopped");

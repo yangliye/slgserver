@@ -1,7 +1,9 @@
 package com.muyi.core.module;
 
+import com.muyi.common.redis.RedisManager;
 import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.web.WebServer;
+import com.muyi.rpc.registry.ZookeeperServiceRegistry;
 import com.muyi.rpc.server.RpcServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +39,22 @@ public abstract class AbstractGameModule implements GameModule {
             if (config.getHost() != null) {
                 rpcServer.host(config.getHost());
             }
+            // 自动关联 ZooKeeper 注册中心
+            String zkAddr = config.getZkAddress();
+            if (zkAddr != null && !zkAddr.isEmpty()) {
+                rpcServer.registry(new ZookeeperServiceRegistry(zkAddr));
+            }
             // 注册 RPC 服务
             registerRpcServices(rpcServer);
+        }
+        
+        // 初始化 Redis（以 module-serverId 为实例名，相同地址复用）
+        String redisAddr = config.getRedisAddress();
+        if (redisAddr != null && !redisAddr.isEmpty()) {
+            String redisName = name() + "-" + config.getServerId();
+            if (!RedisManager.hasInstance(redisName)) {
+                RedisManager.register(redisName, redisAddr);
+            }
         }
         
         // 初始化 Web 服务
@@ -168,5 +184,20 @@ public abstract class AbstractGameModule implements GameModule {
      */
     protected WebServer getWebServer() {
         return webServer;
+    }
+    
+    /**
+     * 获取全局 Redis（infrastructure.redis 配置的）
+     */
+    protected RedisManager getGlobalRedis() {
+        return RedisManager.hasInstance("global") ? RedisManager.of("global") : null;
+    }
+    
+    /**
+     * 获取当前实例独立的 Redis（实例级 redis 配置的）
+     */
+    protected RedisManager getRedis() {
+        String redisName = name() + "-" + config.getServerId();
+        return RedisManager.hasInstance(redisName) ? RedisManager.of(redisName) : null;
     }
 }
