@@ -37,7 +37,23 @@ public class PlayerService {
 public class PlayerHandler { }
 ```
 
-### 3. 方法调用前必须确认存在
+### 3. 禁止私建线程/线程池
+- 所有线程必须通过模块的 `ThreadPoolManager` 统一创建和管理
+- 禁止直接使用 `new Thread()`、`Executors.newXxx()`、`new ThreadPoolExecutor()` 等方式自建线程
+- 原因：统一生命周期管理、统一命名规范、统一监控、ITL 上下文继承
+
+```java
+// ❌ 错误 - 自建线程
+new Thread(() -> doWork()).start();
+Executors.newFixedThreadPool(4);
+
+// ✅ 正确 - 通过 ThreadPoolManager
+getPoolManager().newFixedPool("battle", 4);
+getPoolManager().newSinglePool("save");
+getPoolManager().newScheduledPool("tick", 1);
+```
+
+### 4. 方法调用前必须确认存在
 - 调用方法前必须先 grep 确认方法名存在
 - 不凭推测假设，特别是 Protobuf 等生成的类
 - 避免编译错误和运行时异常

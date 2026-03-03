@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 注册自定义转换器：自动从 InheritableThreadLocal 或 MDC 获取模块信息 -->
+    <conversionRule conversionWord="module" converterClass="com.muyi.core.log.ModuleConverter"/>
+    <conversionRule conversionWord="sid" converterClass="com.muyi.core.log.ServerIdConverter"/>
+
+    <!-- 统一日志格式: [moduleType][serverId][thread] -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%module][%sid][%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- 控制台输出（开发调试用） -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 文件输出：每分钟滚动一个新文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/server.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 按分钟滚动 -->
+            <fileNamePattern>logs/server.%d{yyyy-MM-dd_HH-mm}.log</fileNamePattern>
+            <!-- 保留 7 天的日志（7 * 24 * 60 = 10080 个文件） -->
+            <maxHistory>10080</maxHistory>
+            <!-- 总大小上限 10GB，超出后删除最旧的 -->
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 框架日志级别 -->
+    <logger name="com.muyi" level="INFO"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="org.apache.curator" level="WARN"/>
+    <logger name="org.apache.zookeeper" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

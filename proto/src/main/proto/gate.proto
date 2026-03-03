@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "options.proto";
+
+option java_package = "com.muyi.proto.gate";
+option java_multiple_files = true;
+
+message GateAuthReq {
+    option (msgId) = 9001;
+    string token = 1;
+}
+
+message GateAuthResp {
+    option (msgId) = 9002;
+    bool success = 1;
+    int64 uid = 2;
+    string message = 3;
+    bytes encryptKey = 4;  // RC4 master key, 认证成功后客户端用此密钥初始化加密
+}
+
+message GateHeartbeatReq {
+    option (msgId) = 9003;
+}
+
+message GateHeartbeatResp {
+    option (msgId) = 9004;
+    int64 serverTime = 1;
+}

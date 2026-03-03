@@ -17,6 +17,9 @@ dependencies {
     // 通用工具模块
     api project(':common')
     
+    // 协议定义
+    api project(':proto')
+    
     // SLF4J 日志
     api 'org.slf4j:slf4j-api:2.0.17'
     

@@ -101,13 +101,12 @@ public class MessageRouter {
             return RouteResult.migrating(protoId, "迁服中，请稍后");
         }
         
-        // 4. 确定目标服务器地址
-        String targetAddress = resolveTargetAddress(session, rule.getTarget());
-        if (targetAddress == null && rule.getTarget() != RouteTarget.GATE_LOCAL) {
+        // 4. 检查目标服务是否可路由
+        if (!canRoute(session, rule.getTarget())) {
             return RouteResult.noTarget(protoId, "目标服务器不可用");
         }
         
-        return RouteResult.success(protoId, rule.getTarget(), targetAddress, message);
+        return RouteResult.success(protoId, rule.getTarget(), message);
     }
     
     /**
@@ -132,31 +131,15 @@ public class MessageRouter {
     }
     
     /**
-     * 解析目标服务器地址
+     * 检查目标服务是否可路由（通过 serverId 判断，实际地址由 RpcProxyManager 从 ZK 解析）
      */
-    private String resolveTargetAddress(Session session, RouteTarget target) {
-        switch (target) {
-            case LOGIN:
-                // TODO: 从服务发现获取
-                return "127.0.0.1:8001";
-                
-            case GAME:
-                return session.getGameServerAddress();
-                
-            case WORLD:
-                // World 服务通常是全局的，所有服务器共享
-                // TODO: 从服务发现获取
-                return "127.0.0.1:8004";
-                
-            case ALLIANCE:
-                return session.getAllianceServerAddress();
-                
-            case GATE_LOCAL:
-                return null; // 本地处理
-                
-            default:
-                return null;
-        }
+    private boolean canRoute(Session session, RouteTarget target) {
+        return switch (target) {
+            case GAME -> session.canRouteToGame();
+            case WORLD -> session.canRouteToWorld();
+            case GATE_LOCAL -> true;
+            default -> true;
+        };
     }
     
     /**

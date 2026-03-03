@@ -10,6 +10,8 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.muyi.common.util.log.GameLog;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,9 @@ public class WebServer {
     /** 复用的 API 注册器实例（volatile 保证可见性） */
     private volatile GmApiRegistry registry;
     
+    private String moduleType;
+    private String serverId;
+    
     public WebServer(int port) {
         this.port = port;
         this.app = Javalin.create(config -> {
@@ -52,6 +57,11 @@ public class WebServer {
             error(ctx, 500, "Internal Server Error: " + e.getMessage());
         });
         
+        app.before(ctx -> {
+            if (moduleType != null) GameLog.set(moduleType, serverId);
+        });
+        app.after(ctx -> GameLog.clear());
+        
         // 默认健康检查接口
         app.get("/health", ctx -> success(ctx, Map.of(
                 "status", "UP",
@@ -67,6 +77,15 @@ public class WebServer {
                 success(ctx, List.of());
             }
         });
+    }
+    
+    /**
+     * 设置所属模块信息（用于在 HTTP 线程中设置日志上下文）
+     */
+    public WebServer moduleContext(String moduleType, String serverId) {
+        this.moduleType = moduleType;
+        this.serverId = serverId;
+        return this;
     }
     
     /**

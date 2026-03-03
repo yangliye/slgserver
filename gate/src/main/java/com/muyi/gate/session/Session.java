@@ -34,20 +34,8 @@ public class Session {
     /** 当前所在 Game 服务器ID */
     private volatile int gameServerId;
     
-    /** 当前 Game 服务器地址 */
-    private volatile String gameServerAddress;
-    
-    /** 当前所在 World 服务器ID */
-    private volatile int worldServerId;
-    
-    /** 当前 World 服务器地址 */
-    private volatile String worldServerAddress;
-    
     /** 联盟ID（用于联盟服务路由） */
     private volatile long allianceId;
-    
-    /** 联盟服务器地址 */
-    private volatile String allianceServerAddress;
     
     // ==================== 状态信息 ====================
     
@@ -100,15 +88,11 @@ public class Session {
     }
     
     /**
-     * 进入游戏（同时绑定 Game 和 World 服务器）
+     * 进入游戏（绑定 Game 服务器 ID，地址由 Gate 通过 ZK 动态解析）
      */
-    public boolean enterGame(int gameServerId, String gameServerAddress, 
-                             int worldServerId, String worldServerAddress) {
+    public boolean enterGame(int gameServerId) {
         if (state.compareAndSet(SessionState.AUTHENTICATED, SessionState.GAMING)) {
             this.gameServerId = gameServerId;
-            this.gameServerAddress = gameServerAddress;
-            this.worldServerId = worldServerId;
-            this.worldServerAddress = worldServerAddress;
             return true;
         }
         return false;
@@ -122,29 +106,11 @@ public class Session {
     }
     
     /**
-     * 完成 World 迁服（常见场景：跨区域）
-     * Game 服务器不变，只切换 World 服务器
+     * 完成迁服（合服等场景切换 Game 服务器）
      */
-    public boolean completeWorldMigration(int newWorldServerId, String newWorldServerAddress) {
-        if (state.compareAndSet(SessionState.MIGRATING, SessionState.GAMING)) {
-            this.worldServerId = newWorldServerId;
-            this.worldServerAddress = newWorldServerAddress;
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * 完成 Game 迁服（少见场景：合服等）
-     * 通常 World 也会一起变
-     */
-    public boolean completeGameMigration(int newGameServerId, String newGameServerAddress,
-                                         int newWorldServerId, String newWorldServerAddress) {
+    public boolean completeMigration(int newGameServerId) {
         if (state.compareAndSet(SessionState.MIGRATING, SessionState.GAMING)) {
             this.gameServerId = newGameServerId;
-            this.gameServerAddress = newGameServerAddress;
-            this.worldServerId = newWorldServerId;
-            this.worldServerAddress = newWorldServerAddress;
             return true;
         }
         return false;
@@ -169,15 +135,14 @@ public class Session {
      */
     public boolean canRouteToGame() {
         SessionState current = state.get();
-        return current == SessionState.GAMING && gameServerAddress != null;
+        return current == SessionState.GAMING && gameServerId > 0;
     }
     
     /**
      * 是否可以发送消息到 World 服务器
      */
     public boolean canRouteToWorld() {
-        SessionState current = state.get();
-        return current == SessionState.GAMING && worldServerAddress != null;
+        return canRouteToGame();
     }
     
     /**
@@ -237,40 +202,12 @@ public class Session {
         return gameServerId;
     }
     
-    public String getGameServerAddress() {
-        return gameServerAddress;
-    }
-    
-    public int getWorldServerId() {
-        return worldServerId;
-    }
-    
-    public String getWorldServerAddress() {
-        return worldServerAddress;
-    }
-    
-    /**
-     * @deprecated 使用 getGameServerId() 或 getWorldServerId()
-     */
-    @Deprecated
-    public int getServerId() {
-        return gameServerId;
-    }
-    
     public long getAllianceId() {
         return allianceId;
     }
     
     public void setAllianceId(long allianceId) {
         this.allianceId = allianceId;
-    }
-    
-    public String getAllianceServerAddress() {
-        return allianceServerAddress;
-    }
-    
-    public void setAllianceServerAddress(String allianceServerAddress) {
-        this.allianceServerAddress = allianceServerAddress;
     }
     
     public SessionState getState() {
@@ -299,7 +236,6 @@ public class Session {
                 "sessionId='" + sessionId + '\'' +
                 ", playerId=" + playerId +
                 ", gameServerId=" + gameServerId +
-                ", worldServerId=" + worldServerId +
                 ", state=" + state.get() +
                 ", clientIp='" + clientIp + '\'' +
                 '}';

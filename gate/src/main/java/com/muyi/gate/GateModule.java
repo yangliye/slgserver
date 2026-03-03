@@ -4,8 +4,11 @@ import com.muyi.core.module.AbstractGameModule;
 import com.muyi.core.web.WebServer;
 import com.muyi.gate.migrate.ServerMigrator;
 import com.muyi.gate.router.MessageRouter;
+import com.muyi.gate.service.GatePlayerService;
 import com.muyi.gate.service.GateServiceImpl;
 import com.muyi.gate.session.SessionManager;
+import com.muyi.gate.tcp.GateTcpServer;
+import com.muyi.rpc.registry.ServiceInstance;
 import com.muyi.rpc.server.RpcServer;
 
 /**
@@ -27,6 +30,8 @@ public class GateModule extends AbstractGameModule {
     private MessageRouter messageRouter;
     private ServerMigrator serverMigrator;
     private GateServiceImpl gateService;
+    private GatePlayerService playerService;
+    private GateTcpServer tcpServer;
     
     @Override
     public String name() {
@@ -50,12 +55,20 @@ public class GateModule extends AbstractGameModule {
     
     @Override
     public int webPort() {
-        // Gate 不提供 Web 接口，返回 0 表示不启动
         return 0;
+    }
+    
+    /**
+     * TCP 端口（客户端接入），默认 9001
+     */
+    public int tcpPort() {
+        return config != null ? config.getTcpPort() : 9001;
     }
     
     @Override
     protected void doInit() {
+        com.muyi.proto.MessageRegistry.init();
+        
         // 初始化会话管理器
         sessionManager = new SessionManager();
         
@@ -68,12 +81,44 @@ public class GateModule extends AbstractGameModule {
         // 初始化 RPC 服务
         gateService = new GateServiceImpl(sessionManager, serverMigrator);
         
-        log.info("Gate module initialized with {} route rules", messageRouter.getRuleCount());
+        // 初始化玩家生命周期服务
+        playerService = new GatePlayerService(sessionManager, getRpcProxy());
+        
+        // 初始化 TCP 服务器
+        int port = tcpPort();
+        if (port > 0) {
+            tcpServer = new GateTcpServer(port, config.getServerId(),
+                    sessionManager, getRpcProxy(), messageRouter, getGlobalRedis());
+        }
+        
+        // 将 TCP 对外地址注册到 ZK，供 Login 动态分配
+        if (getZkRegistry() != null && port > 0) {
+            String tcpHost = config.getHost() != null ? config.getHost() : "127.0.0.1";
+            getZkRegistry().addMetadata(ServiceInstance.META_TCP_HOST, tcpHost);
+            getZkRegistry().addMetadata(ServiceInstance.META_TCP_PORT, String.valueOf(port));
+        }
+        
+        log.info("Gate module initialized with {} route rules, tcpPort={}",
+                messageRouter.getRuleCount(), port);
     }
     
     @Override
     protected void registerRpcServices(RpcServer server) {
         server.registerService(gateService);
+    }
+    
+    @Override
+    protected void doStart() throws Exception {
+        if (tcpServer != null) {
+            tcpServer.start();
+        }
+    }
+    
+    @Override
+    protected void doStop() {
+        if (tcpServer != null) {
+            tcpServer.stop();
+        }
     }
     
     @Override
@@ -93,5 +138,9 @@ public class GateModule extends AbstractGameModule {
     
     public ServerMigrator getServerMigrator() {
         return serverMigrator;
+    }
+    
+    public GatePlayerService getPlayerService() {
+        return playerService;
     }
 }

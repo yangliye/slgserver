@@ -25,6 +25,9 @@ public class ModuleConfig {
     /** Web 端口 */
     private int webPort;
     
+    /** TCP 端口（Gate 客户端接入） */
+    private int tcpPort;
+    
     /** ZooKeeper 地址 */
     private String zkAddress;
     
@@ -94,6 +97,11 @@ public class ModuleConfig {
     
     public ModuleConfig webPort(int webPort) {
         this.webPort = webPort;
+        return this;
+    }
+    
+    public ModuleConfig tcpPort(int tcpPort) {
+        this.tcpPort = tcpPort;
         return this;
     }
     
@@ -210,6 +218,10 @@ public class ModuleConfig {
     
     public int getWebPort() {
         return webPort;
+    }
+    
+    public int getTcpPort() {
+        return tcpPort;
     }
     
     public String getZkAddress() {

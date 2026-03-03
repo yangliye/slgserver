@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+import "options.proto";
+
+option java_package = "com.muyi.proto.game";
+option java_multiple_files = true;
+
+// ==================== 登录进入游戏 ====================
+
+message PlayerLoginReq {
+    option (msgId) = 1001;
+}
+
+message PlayerLoginResp {
+    option (msgId) = 1002;
+    int32 code = 1;           // 0=成功
+    string message = 2;
+    PlayerData playerData = 3;
+}
+
+message PlayerData {
+    int64 uid = 1;
+    string name = 2;
+    int32 level = 3;
+    int64 exp = 4;
+    int32 vipLevel = 5;
+    int64 gold = 6;
+    int64 diamond = 7;
+    int64 lastLoginTime = 8;
+    int64 createTime = 9;
+}
+
+// ==================== 查询玩家信息 ====================
+
+message PlayerInfoReq {
+    option (msgId) = 2001;
+}
+
+message PlayerInfoResp {
+    option (msgId) = 2002;
+    int64 uid = 1;
+    string name = 2;
+    int32 level = 3;
+}

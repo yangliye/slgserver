@@ -4,6 +4,8 @@ import com.muyi.core.module.AbstractGameModule;
 import com.muyi.core.web.WebServer;
 import com.muyi.login.controller.LoginApiController;
 import com.muyi.login.controller.LoginGmController;
+import com.muyi.login.service.LoginServiceImpl;
+import com.muyi.login.service.TokenService;
 import com.muyi.rpc.server.RpcServer;
 
 /**
@@ -21,6 +23,8 @@ import com.muyi.rpc.server.RpcServer;
  */
 public class LoginModule extends AbstractGameModule {
     
+    protected TokenService tokenService;
+    protected LoginServiceImpl loginService;
     protected LoginApiController apiController;
     protected LoginGmController gmController;
     
@@ -51,7 +55,16 @@ public class LoginModule extends AbstractGameModule {
     
     @Override
     protected void doInit() {
+        tokenService = new TokenService();
+        tokenService.setRedis(getGlobalRedis());
+        
+        loginService = new LoginServiceImpl();
+        
         apiController = createApiController();
+        apiController.setTokenService(tokenService);
+        apiController.setRpcProxy(getRpcProxy());
+        apiController.setGlobalRedis(getGlobalRedis());
+        
         gmController = createGmController();
         log.info("Login module initialized");
     }
@@ -72,7 +85,7 @@ public class LoginModule extends AbstractGameModule {
     
     @Override
     protected void registerRpcServices(RpcServer server) {
-        // 由子类注册 RPC 服务
+        server.registerService(loginService);
     }
     
     @Override

@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.muyi.rpc.annotation.RpcService;
 import com.muyi.rpc.codec.RpcDecoder;
 import com.muyi.rpc.codec.RpcEncoder;
@@ -77,6 +76,9 @@ public class RpcServer {
     
     /** 服务器ID */
     private int serverId;
+    
+    /** 日志标签（所属模块名，如 "gate"），用于框架日志归属 */
+    private String logTag;
     
     /** 是否已启动（使用 AtomicBoolean 确保线程安全） */
     private final java.util.concurrent.atomic.AtomicBoolean running = new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -390,6 +392,19 @@ public class RpcServer {
         checkNotStarted();
         this.serverId = serverId;
         return this;
+    }
+    
+    /**
+     * 设置日志标签（所属模块名，如 "gate"、"game"）
+     */
+    public RpcServer logTag(String logTag) {
+        checkNotStarted();
+        this.logTag = logTag;
+        return this;
+    }
+    
+    public String getLogTag() {
+        return logTag;
     }
     
     /**

@@ -78,6 +78,10 @@ public class ServiceInstance implements Serializable {
     public static final String META_CURRENT_CONNECTIONS = "currentConnections";
     /** 版本号 */
     public static final String META_VERSION = "version";
+    /** TCP 对外主机（如 Gate 的客户端接入地址） */
+    public static final String META_TCP_HOST = "tcpHost";
+    /** TCP 对外端口 */
+    public static final String META_TCP_PORT = "tcpPort";
     
     // ========== Getters and Setters ==========
     

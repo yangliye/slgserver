@@ -129,16 +129,7 @@ public class SessionManager {
     }
     
     /**
-     * 获取指定 World 服务器的所有会话
-     */
-    public Collection<Session> getSessionsByWorldServerId(int worldServerId) {
-        return sessionByPlayerId.values().stream()
-                .filter(s -> s.getWorldServerId() == worldServerId)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * @deprecated 使用 getSessionsByGameServerId() 或 getSessionsByWorldServerId()
+     * @deprecated 使用 getSessionsByGameServerId()
      */
     @Deprecated
     public Collection<Session> getSessionsByServerId(int serverId) {

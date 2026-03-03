@@ -560,6 +560,78 @@ public final class TimeUtils {
         return today().lengthOfMonth();
     }
     
+    // ==================== 调度时间计算 ====================
+    
+    /**
+     * 计算下一个每天 HH:mm 的时间戳（毫秒）
+     * <p>
+     * 如果当前时间已过今天的 HH:mm，返回明天的 HH:mm
+     *
+     * @param now    当前时间戳（毫秒）
+     * @param hour   小时（0-23）
+     * @param minute 分钟（0-59）
+     * @return 下一次触发的时间戳（毫秒）
+     */
+    public static long nextDailyMillis(long now, int hour, int minute) {
+        LocalDateTime ldt = toLocalDateTime(now);
+        LocalDateTime next = ldt.toLocalDate().atTime(hour, minute);
+        if (!next.isAfter(ldt)) {
+            next = next.plusDays(1);
+        }
+        return toMillis(next);
+    }
+    
+    /**
+     * 计算下一个每周 DAY HH:mm 的时间戳（毫秒）
+     *
+     * @param now       当前时间戳（毫秒）
+     * @param dayOfWeek 星期几
+     * @param hour      小时（0-23）
+     * @param minute    分钟（0-59）
+     * @return 下一次触发的时间戳（毫秒）
+     */
+    public static long nextWeeklyMillis(long now, DayOfWeek dayOfWeek, int hour, int minute) {
+        LocalDateTime ldt = toLocalDateTime(now);
+        LocalDate nextDay = ldt.toLocalDate().with(TemporalAdjusters.nextOrSame(dayOfWeek));
+        LocalDateTime next = nextDay.atTime(hour, minute);
+        if (!next.isAfter(ldt)) {
+            next = ldt.toLocalDate().with(TemporalAdjusters.next(dayOfWeek)).atTime(hour, minute);
+        }
+        return toMillis(next);
+    }
+    
+    /**
+     * 计算下一个每小时 :mm 的时间戳（毫秒）
+     *
+     * @param now    当前时间戳（毫秒）
+     * @param minute 分钟（0-59）
+     * @return 下一次触发的时间戳（毫秒）
+     */
+    public static long nextHourlyMillis(long now, int minute) {
+        LocalDateTime ldt = toLocalDateTime(now);
+        LocalDateTime next = ldt.truncatedTo(ChronoUnit.HOURS).plusMinutes(minute);
+        if (!next.isAfter(ldt)) {
+            next = next.plusHours(1);
+        }
+        return toMillis(next);
+    }
+    
+    /**
+     * 计算下一个每分钟 :ss 的时间戳（毫秒）
+     *
+     * @param now    当前时间戳（毫秒）
+     * @param second 秒（0-59）
+     * @return 下一次触发的时间戳（毫秒）
+     */
+    public static long nextMinuteMillis(long now, int second) {
+        LocalDateTime ldt = toLocalDateTime(now);
+        LocalDateTime next = ldt.truncatedTo(ChronoUnit.MINUTES).plusSeconds(second);
+        if (!next.isAfter(ldt)) {
+            next = next.plusMinutes(1);
+        }
+        return toMillis(next);
+    }
+    
     // ==================== SLG 游戏常用 ====================
     
     /**

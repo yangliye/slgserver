@@ -27,9 +27,11 @@ dependencies {
     // Objenesis - 对象创建
     implementation 'org.objenesis:objenesis:3.4'
     
-    // SLF4J + Logback 日志
+    // SLF4J 日志（库模块只依赖 API，实现由应用层提供）
     api 'org.slf4j:slf4j-api:2.0.17'
-    implementation 'ch.qos.logback:logback-classic:1.5.27'
+    
+    // 测试时需要日志实现
+    testImplementation 'ch.qos.logback:logback-classic:1.5.27'
     
     // Guava 工具库
     api 'com.google.guava:guava:33.5.0-jre'

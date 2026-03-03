@@ -1,6 +1,7 @@
 package com.muyi.core.bootstrap;
 
 import com.muyi.common.redis.RedisManager;
+import com.muyi.common.util.log.GameLog;
 import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.config.ServerConfig;
 import com.muyi.core.config.ServerConfig.InstanceConfig;
@@ -127,6 +128,9 @@ public class Bootstrap {
         moduleInstance.start();
         
         startedModules.add(new StartedModule(instanceId, moduleInstance));
+        
+        // 清理主线程 MDC，避免 Bootstrap 日志带上最后一个模块的标记
+        GameLog.clear();
         log.info("{} started", instanceId);
     }
     

@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.muyi.common.util.log.GameLog;
 import com.muyi.common.util.time.TimeUtils;
 import com.muyi.rpc.core.RpcFuture;
 import com.muyi.rpc.core.RpcRequest;
@@ -86,25 +86,32 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
         }
         
         if (msg.getData() instanceof RpcRequest request) {
-            // 提交到共享虚拟线程池处理
             EXECUTOR.execute(() -> {
-                RpcResponse response = handleRequest(request);
-                
-                // 如果是单向调用，不需要返回响应
-                if (request.isOneWay()) {
-                    return;
+                String tag = rpcServer.getLogTag();
+                if (tag != null) {
+                    GameLog.set(tag, String.valueOf(rpcServer.getServerId()));
                 }
-                
-                // 发送响应
-                RpcMessage responseMsg = new RpcMessage(
-                        MessageType.RESPONSE,
-                        SerializerFactory.getDefaultType(),
-                        request.getRequestId(),
-                        response
-                );
-                
-                if (ctx.channel().isActive()) {
-                    ctx.writeAndFlush(responseMsg);
+                try {
+                    RpcResponse response = handleRequest(request);
+                    
+                    // 如果是单向调用，不需要返回响应
+                    if (request.isOneWay()) {
+                        return;
+                    }
+                    
+                    // 发送响应
+                    RpcMessage responseMsg = new RpcMessage(
+                            MessageType.RESPONSE,
+                            SerializerFactory.getDefaultType(),
+                            request.getRequestId(),
+                            response
+                    );
+                    
+                    if (ctx.channel().isActive()) {
+                        ctx.writeAndFlush(responseMsg);
+                    }
+                } finally {
+                    GameLog.clear();
                 }
             });
         }

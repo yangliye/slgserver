@@ -1,8 +1,9 @@
 package com.muyi.gate.service;
 
-import com.muyi.gate.api.IGateService;
-import com.muyi.gate.migrate.MigrationRequest;
-import com.muyi.gate.migrate.MigrationResult;
+import com.muyi.proto.GamePacket;
+import com.muyi.shared.api.IGateService;
+import com.muyi.shared.migrate.MigrationRequest;
+import com.muyi.shared.migrate.MigrationResult;
 import com.muyi.gate.migrate.ServerMigrator;
 import com.muyi.gate.session.Session;
 import com.muyi.gate.session.SessionManager;
@@ -38,8 +39,9 @@ public class GateServiceImpl implements IGateService {
             return false;
         }
         
-        // TODO: 序列化并发送消息
-        // session.getChannel().writeAndFlush(encodeMessage(protoId, message));
+        byte[] payload = (message instanceof byte[]) ? (byte[]) message : new byte[0];
+        GamePacket packet = new GamePacket(protoId, 0, payload);
+        session.getChannel().writeAndFlush(packet);
         log.debug("Pushed message to player {}: protoId={}", playerId, protoId);
         return true;
     }
@@ -57,10 +59,12 @@ public class GateServiceImpl implements IGateService {
     
     @Override
     public int broadcast(int protoId, Object message) {
+        byte[] payload = (message instanceof byte[]) ? (byte[]) message : new byte[0];
+        GamePacket packet = new GamePacket(protoId, 0, payload);
         int count = 0;
         for (Session session : sessionManager.getAllSessions()) {
             if (session.isOnline() && session.getPlayerId() > 0) {
-                // TODO: 序列化并发送消息
+                session.getChannel().writeAndFlush(packet);
                 count++;
             }
         }
@@ -70,11 +74,13 @@ public class GateServiceImpl implements IGateService {
     
     @Override
     public int broadcastToServer(int serverId, int protoId, Object message) {
+        byte[] payload = (message instanceof byte[]) ? (byte[]) message : new byte[0];
+        GamePacket packet = new GamePacket(protoId, 0, payload);
         Collection<Session> sessions = sessionManager.getSessionsByServerId(serverId);
         int count = 0;
         for (Session session : sessions) {
             if (session.isOnline()) {
-                // TODO: 序列化并发送消息
+                session.getChannel().writeAndFlush(packet);
                 count++;
             }
         }
@@ -111,7 +117,7 @@ public class GateServiceImpl implements IGateService {
     public int getPlayerServerId(long playerId) {
         Session session = sessionManager.getSessionByPlayerId(playerId);
         if (session != null && session.isOnline()) {
-            return session.getServerId();
+            return session.getGameServerId();
         }
         return -1;
     }

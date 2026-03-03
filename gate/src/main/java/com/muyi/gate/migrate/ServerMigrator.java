@@ -1,6 +1,9 @@
 package com.muyi.gate.migrate;
 
 import com.muyi.common.util.time.TimeUtils;
+import com.muyi.shared.migrate.MigrationRequest;
+import com.muyi.shared.migrate.MigrationResult;
+import com.muyi.shared.migrate.MigrationType;
 import com.muyi.gate.session.Session;
 import com.muyi.gate.session.SessionManager;
 import org.slf4j.Logger;
@@ -154,7 +157,6 @@ public class ServerMigrator {
     private MigrationResult executeWorldMigration(MigrationRequest request, Session session) {
         long playerId = request.getPlayerId();
         
-        // Step 1: 通知源 World 服务器保存玩家区域数据
         log.debug("World Migration Step 1: Saving player region data on source World server");
         boolean saved = notifySourceWorldSave(request);
         if (!saved) {
@@ -162,7 +164,6 @@ public class ServerMigrator {
             return MigrationResult.fail(playerId, 2001, "World 数据保存失败");
         }
         
-        // Step 2: 通知目标 World 服务器加载/初始化玩家数据
         log.debug("World Migration Step 2: Loading player data on target World server");
         boolean loaded = notifyTargetWorldLoad(request);
         if (!loaded) {
@@ -170,19 +171,13 @@ public class ServerMigrator {
             return MigrationResult.fail(playerId, 2002, "World 数据加载失败");
         }
         
-        // Step 3: 更新 Session 的 World 路由信息
-        log.debug("World Migration Step 3: Updating World route");
-        boolean updated = session.completeWorldMigration(
-                request.getTargetWorldServerId(),
-                request.getTargetWorldServerAddress());
-        
+        // World 路由由 Game 内部管理，Gate Session 只恢复状态
+        boolean updated = session.completeMigration(session.getGameServerId());
         if (!updated) {
             session.cancelMigration();
-            return MigrationResult.fail(playerId, 2003, "更新 World 路由失败");
+            return MigrationResult.fail(playerId, 2003, "恢复 Session 状态失败");
         }
         
-        // Step 4: 通知客户端
-        log.debug("World Migration Step 4: Notifying client");
         notifyClientMigrationComplete(session, request.getTargetWorldServerId());
         
         log.info("World migration completed for player {}: World {} -> {}", 
@@ -215,11 +210,7 @@ public class ServerMigrator {
         
         // Step 3: 更新 Session（Game 迁移通常 World 也要跟着变）
         log.debug("Game Migration Step 3: Updating routes");
-        boolean updated = session.completeGameMigration(
-                request.getTargetGameServerId(),
-                request.getTargetGameServerAddress(),
-                request.getTargetWorldServerId(),
-                request.getTargetWorldServerAddress());
+        boolean updated = session.completeMigration(request.getTargetGameServerId());
         
         if (!updated) {
             session.cancelMigration();
@@ -268,11 +259,7 @@ public class ServerMigrator {
         
         // Step 5: 更新所有路由
         log.debug("Full Migration Step 5: Updating all routes");
-        boolean updated = session.completeGameMigration(
-                request.getTargetGameServerId(),
-                request.getTargetGameServerAddress(),
-                request.getTargetWorldServerId(),
-                request.getTargetWorldServerAddress());
+        boolean updated = session.completeMigration(request.getTargetGameServerId());
         
         if (!updated) {
             session.cancelMigration();

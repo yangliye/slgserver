@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+option java_package = "com.muyi.proto";
+option java_outer_classname = "MsgOptions";
+
+extend google.protobuf.MessageOptions {
+    optional int32 msgId = 54321;
+}

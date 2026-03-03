@@ -10,6 +10,9 @@ dependencies {
     // 核心框架
     api project(':core')
     
+    // 业务公共（跨模块 RPC 接口）
+    api project(':shared')
+    
     // 测试依赖
     testImplementation platform('org.junit:junit-bom:5.14.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
