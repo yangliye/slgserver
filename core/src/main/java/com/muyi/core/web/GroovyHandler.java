@@ -52,7 +52,7 @@ public class GroovyHandler {
 
     private void execute(Context ctx) {
         String script = ctx.body();
-        if (script == null || script.isBlank()) {
+        if (script.isBlank()) {
             WebServer.fail(ctx, "script is empty, put groovy script in POST body");
             return;
         }

@@ -118,13 +118,15 @@ instances:
   - module: gate
     serverId: 1
     rpcPort: 10002
-    webPort: 18002
+    tcpPort: 9001                       # 客户端 TCP 接入端口
+    # webPort: 18002                    # Gate 默认不开 Web
 
   # ---------- 游戏服务（服务器1） ----------
   - module: game
     serverId: 1
     rpcPort: 10003
     webPort: 18003
+    groovyEnabled: false                # Groovy 热执行（仅开发环境开启，POST /groovy）
     database:
       url: jdbc:mysql://127.0.0.1:3306/slg_game_1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       user: root
