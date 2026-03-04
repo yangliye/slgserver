@@ -4,7 +4,7 @@ import com.muyi.game.handler.GameMessageDispatcher;
 import com.muyi.game.player.PlayerExecutor;
 import com.muyi.game.player.PlayerExecutorManager;
 import com.muyi.rpc.annotation.RpcService;
-import com.muyi.shared.api.IGameService;
+import com.muyi.shared.api.game.IGameService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,7 +1,7 @@
 package com.muyi.gate.service;
 
 import com.muyi.proto.GamePacket;
-import com.muyi.shared.api.IGateService;
+import com.muyi.shared.api.gate.IGateService;
 import com.muyi.shared.migrate.MigrationRequest;
 import com.muyi.shared.migrate.MigrationResult;
 import com.muyi.gate.migrate.ServerMigrator;

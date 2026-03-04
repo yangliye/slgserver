@@ -4,7 +4,6 @@ import com.muyi.core.module.AbstractGameModule;
 import com.muyi.core.web.WebServer;
 import com.muyi.gate.migrate.ServerMigrator;
 import com.muyi.gate.router.MessageRouter;
-import com.muyi.gate.service.GatePlayerService;
 import com.muyi.gate.service.GateServiceImpl;
 import com.muyi.gate.session.SessionManager;
 import com.muyi.gate.tcp.GateTcpServer;
@@ -30,7 +29,6 @@ public class GateModule extends AbstractGameModule {
     private MessageRouter messageRouter;
     private ServerMigrator serverMigrator;
     private GateServiceImpl gateService;
-    private GatePlayerService playerService;
     private GateTcpServer tcpServer;
     
     @Override
@@ -80,9 +78,6 @@ public class GateModule extends AbstractGameModule {
         
         // 初始化 RPC 服务
         gateService = new GateServiceImpl(sessionManager, serverMigrator);
-        
-        // 初始化玩家生命周期服务
-        playerService = new GatePlayerService(sessionManager, getRpcProxy());
         
         // 初始化 TCP 服务器
         int port = tcpPort();
@@ -138,9 +133,5 @@ public class GateModule extends AbstractGameModule {
     
     public ServerMigrator getServerMigrator() {
         return serverMigrator;
-    }
-    
-    public GatePlayerService getPlayerService() {
-        return playerService;
     }
 }

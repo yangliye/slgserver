@@ -1,7 +1,7 @@
 package com.muyi.login.service;
 
 import com.muyi.rpc.annotation.RpcService;
-import com.muyi.shared.api.ILoginService;
+import com.muyi.shared.api.login.ILoginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

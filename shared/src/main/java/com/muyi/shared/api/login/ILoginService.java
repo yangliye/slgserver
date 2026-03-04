@@ -1,4 +1,4 @@
-package com.muyi.shared.api;
+package com.muyi.shared.api.login;
 
 /**
  * Login 模块 RPC 服务接口

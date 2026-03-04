@@ -13,7 +13,8 @@ import com.muyi.proto.gate.GateAuthReq;
 import com.muyi.proto.gate.GateAuthResp;
 import com.muyi.proto.gate.GateHeartbeatResp;
 import com.muyi.rpc.client.RpcProxyManager;
-import com.muyi.shared.api.IGameService;
+import com.muyi.shared.api.game.IGameService;
+import com.muyi.shared.api.world.IWorldService;
 import com.muyi.shared.dto.TokenInfo;
 import com.muyi.shared.token.TokenStore;
 import io.netty.channel.ChannelHandlerContext;
@@ -177,9 +178,15 @@ public class GateChannelHandler extends SimpleChannelInboundHandler<GamePacket> 
     }
 
     private void forwardToWorld(GamePacket packet) {
-        // TODO: World 模块的 RPC 转发（IWorldService.forwardMessage）
-        log.debug("Player[{}] world message routing not yet implemented, msgId={}",
-                session.getPlayerId(), packet.getMsgId());
+        try {
+            IWorldService world = rpcProxy.get(IWorldService.class);
+            world.forwardMessage(
+                    session.getPlayerId(), session.getGameServerId(), gateServerId,
+                    packet.getMsgId(), packet.getMsgSeq(), packet.getPayload());
+        } catch (Exception e) {
+            log.error("Player[{}] forward to world failed, msgId={}",
+                    session.getPlayerId(), packet.getMsgId(), e);
+        }
     }
 
     private void handleLocalMessage(ChannelHandlerContext ctx, GamePacket packet) {

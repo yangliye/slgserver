@@ -1,10 +1,11 @@
 package com.muyi.core.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.muyi.db.config.DbConfig;
 import com.muyi.rpc.client.RpcClientConfig;
 import com.muyi.rpc.server.RpcServerConfig;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 模块配置

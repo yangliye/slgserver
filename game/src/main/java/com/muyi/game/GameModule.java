@@ -8,7 +8,7 @@ import com.muyi.game.player.GatePusher;
 import com.muyi.game.player.PlayerExecutorManager;
 import com.muyi.game.service.GameServiceImpl;
 import com.muyi.rpc.server.RpcServer;
-import com.muyi.shared.api.IGateService;
+import com.muyi.shared.api.gate.IGateService;
 
 /**
  * Game 模块骨架
