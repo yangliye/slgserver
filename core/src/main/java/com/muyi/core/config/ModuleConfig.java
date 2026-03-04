@@ -76,6 +76,9 @@ public class ModuleConfig {
     /** RPC 客户端配置 */
     private RpcClientConfig rpcClientConfig;
     
+    /** 是否启用 Groovy 热执行（默认关闭，仅开发/测试环境开启） */
+    private boolean groovyEnabled;
+    
     /** 扩展配置 */
     private Map<String, Object> extra = new HashMap<>();
     
@@ -191,6 +194,11 @@ public class ModuleConfig {
         return this;
     }
     
+    public ModuleConfig groovyEnabled(boolean groovyEnabled) {
+        this.groovyEnabled = groovyEnabled;
+        return this;
+    }
+    
     public ModuleConfig extra(String key, Object value) {
         this.extra.put(key, value);
         return this;
@@ -291,6 +299,10 @@ public class ModuleConfig {
     
     public RpcClientConfig getRpcClientConfig() {
         return rpcClientConfig;
+    }
+    
+    public boolean isGroovyEnabled() {
+        return groovyEnabled;
     }
     
     @SuppressWarnings("unchecked")

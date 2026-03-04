@@ -6,6 +6,7 @@ import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.log.ModuleRegistry;
 import com.muyi.core.scheduler.GameScheduler;
 import com.muyi.core.thread.ThreadPoolManager;
+import com.muyi.core.web.GroovyHandler;
 import com.muyi.core.web.WebServer;
 import com.muyi.db.DbManager;
 import com.muyi.db.config.DbConfig;
@@ -130,8 +131,11 @@ public abstract class AbstractGameModule implements GameModule {
         int webPort = webPort();
         if (webPort > 0) {
             this.webServer = new WebServer(webPort).moduleContext(name(), String.valueOf(config.getServerId()));
-            // 注册 Web 路由
             registerWebRoutes(webServer);
+            
+            if (config.isGroovyEnabled()) {
+                new GroovyHandler(this).register(webServer);
+            }
         }
         
         // 子类自定义初始化

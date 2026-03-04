@@ -32,6 +32,9 @@ dependencies {
     // ClassGraph - 类扫描（用于Web注解扫描）
     api 'io.github.classgraph:classgraph:4.8.174'
     
+    // Groovy - 热执行脚本（GM 调试用，线上可关闭）
+    implementation 'org.apache.groovy:groovy:5.0.4'
+    
     // SLF4J + Logback 日志（core 是启动入口，运行时需要 logback 实现）
     api 'org.slf4j:slf4j-api:2.0.17'
     api 'ch.qos.logback:logback-classic:1.5.27'
