@@ -94,7 +94,7 @@ public class PlayerDataContext {
      * 获取指定类型的 Manager（便捷方法，等价于 getComponent）
      */
     @SuppressWarnings("unchecked")
-    public <M extends AbstractPlayerManager<?>> M getManager(Class<M> clazz) {
+    public <M extends AbstractPlayerManager<?, ?>> M getManager(Class<M> clazz) {
         return (M) components.get(clazz);
     }
 

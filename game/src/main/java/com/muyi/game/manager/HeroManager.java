@@ -21,7 +21,7 @@ import java.util.Collection;
  * @author muyi
  */
 @PlayerData(order = 10)
-public class HeroManager extends AbstractPlayerManager<HeroEntity> {
+public class HeroManager extends AbstractPlayerManager<Integer, HeroEntity> {
 
     @Override
     protected Class<HeroEntity> entityClass() {
@@ -29,7 +29,7 @@ public class HeroManager extends AbstractPlayerManager<HeroEntity> {
     }
 
     @Override
-    protected int keyOf(HeroEntity entity) {
+    protected Integer keyOf(HeroEntity entity) {
         return entity.getHeroId();
     }
 

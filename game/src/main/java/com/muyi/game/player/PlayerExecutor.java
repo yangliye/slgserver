@@ -123,7 +123,7 @@ public class PlayerExecutor {
     /**
      * 获取指定类型的 Manager（便捷方法）
      */
-    public <M extends AbstractPlayerManager<?>> M getManager(Class<M> clazz) {
+    public <M extends AbstractPlayerManager<?, ?>> M getManager(Class<M> clazz) {
         if (dataContext == null) {
             return null;
         }

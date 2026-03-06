@@ -19,26 +19,27 @@ import java.util.concurrent.ConcurrentHashMap;
  * 使用示例:
  * <pre>{@code
  * @PlayerData(order = 10)
- * public class HeroManager extends AbstractPlayerManager<HeroEntity> {
+ * public class HeroManager extends AbstractPlayerManager<Integer, HeroEntity> {
  *
  *     @Override
  *     protected Class<HeroEntity> entityClass() { return HeroEntity.class; }
  *
  *     @Override
- *     protected int keyOf(HeroEntity entity) { return entity.getHeroId(); }
+ *     protected Integer keyOf(HeroEntity entity) { return entity.getHeroId(); }
  *
  *     public HeroEntity getHero(int heroId) { return get(heroId); }
  * }
  * }</pre>
  *
+ * @param <K> 业务 key 类型（Integer, Long, String 等）
  * @param <T> 实体类型
  * @author muyi
  * @see AbstractPlayerLogic
  */
-public abstract class AbstractPlayerManager<T extends BaseEntity<T>> extends AbstractPlayerComponent {
+public abstract class AbstractPlayerManager<K, T extends BaseEntity<T>> extends AbstractPlayerComponent {
 
     private DbManager db;
-    private final Map<Integer, T> dataMap = new ConcurrentHashMap<>();
+    private final Map<K, T> dataMap = new ConcurrentHashMap<>();
 
     // ==================== 子类必须实现 ====================
 
@@ -52,7 +53,7 @@ public abstract class AbstractPlayerManager<T extends BaseEntity<T>> extends Abs
      * <p>
      * 对于单条数据的 Manager（如玩家基础信息），直接返回固定值即可
      */
-    protected abstract int keyOf(T entity);
+    protected abstract K keyOf(T entity);
 
     // ==================== 子类可选重写 ====================
 
@@ -96,7 +97,7 @@ public abstract class AbstractPlayerManager<T extends BaseEntity<T>> extends Abs
 
     // ==================== 数据访问 ====================
 
-    protected T get(int key) {
+    protected T get(K key) {
         return dataMap.get(key);
     }
 
@@ -108,7 +109,7 @@ public abstract class AbstractPlayerManager<T extends BaseEntity<T>> extends Abs
         return dataMap.size();
     }
 
-    protected boolean contains(int key) {
+    protected boolean contains(K key) {
         return dataMap.containsKey(key);
     }
 
@@ -132,7 +133,7 @@ public abstract class AbstractPlayerManager<T extends BaseEntity<T>> extends Abs
     /**
      * 删除数据（内存移除 + 异步入库）
      */
-    protected void remove(int key) {
+    protected void remove(K key) {
         T entity = dataMap.remove(key);
         if (entity != null) {
             db.submitDelete(entity);

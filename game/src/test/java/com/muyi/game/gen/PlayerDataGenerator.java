@@ -163,9 +163,22 @@ public class PlayerDataGenerator {
     static void generateManager(Path srcRoot, String bizName, List<ColumnInfo> columns, String keyCol, int order)
             throws IOException {
         String className = bizName + "Manager";
+        Path file = resolveJavaFile(srcRoot, MANAGER_PKG, className);
+        if (Files.exists(file)) {
+            System.out.println("  [skip] " + className + ".java already exists");
+            return;
+        }
         String entityClass = bizName + "Entity";
         String keyField = snakeToCamel(keyCol, false);
         String keyGetter = "get" + snakeToCamel(keyCol, true);
+
+        String keyJavaType = "Integer";
+        for (ColumnInfo col : columns) {
+            if (col.name.equals(keyCol)) {
+                keyJavaType = sqlToJavaBoxedType(col.type);
+                break;
+            }
+        }
 
         StringBuilder sb = new StringBuilder();
         sb.append("package ").append(MANAGER_PKG).append(";\n\n");
@@ -175,7 +188,8 @@ public class PlayerDataGenerator {
         sb.append("import java.util.Collection;\n\n");
 
         sb.append("@PlayerData(order = ").append(order).append(")\n");
-        sb.append("public class ").append(className).append(" extends AbstractPlayerManager<").append(entityClass).append("> {\n\n");
+        sb.append("public class ").append(className).append(" extends AbstractPlayerManager<")
+                .append(keyJavaType).append(", ").append(entityClass).append("> {\n\n");
 
         sb.append("    @Override\n");
         sb.append("    protected Class<").append(entityClass).append("> entityClass() {\n");
@@ -183,12 +197,19 @@ public class PlayerDataGenerator {
         sb.append("    }\n\n");
 
         sb.append("    @Override\n");
-        sb.append("    protected int keyOf(").append(entityClass).append(" entity) {\n");
+        sb.append("    protected ").append(keyJavaType).append(" keyOf(").append(entityClass).append(" entity) {\n");
         sb.append("        return entity.").append(keyGetter).append("();\n");
         sb.append("    }\n\n");
 
+        String keyParamType = sqlToJavaType(keyCol);
+        for (ColumnInfo col : columns) {
+            if (col.name.equals(keyCol)) {
+                keyParamType = sqlToJavaType(col.type);
+                break;
+            }
+        }
         sb.append("    public ").append(entityClass).append(" getBy").append(snakeToCamel(keyCol, true));
-        sb.append("(int ").append(keyField).append(") {\n");
+        sb.append("(").append(keyParamType).append(" ").append(keyField).append(") {\n");
         sb.append("        return get(").append(keyField).append(");\n");
         sb.append("    }\n\n");
 
@@ -264,6 +285,19 @@ public class PlayerDataGenerator {
             }
         }
         return sb.toString();
+    }
+
+    static String sqlToJavaBoxedType(String sqlType) {
+        String primitive = sqlToJavaType(sqlType);
+        return switch (primitive) {
+            case "int" -> "Integer";
+            case "long" -> "Long";
+            case "short" -> "Short";
+            case "float" -> "Float";
+            case "double" -> "Double";
+            case "boolean" -> "Boolean";
+            default -> primitive;
+        };
     }
 
     static String sqlToJavaType(String sqlType) {
