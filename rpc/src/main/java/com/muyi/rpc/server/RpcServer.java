@@ -80,6 +80,9 @@ public class RpcServer {
     /** 日志标签（所属模块名，如 "gate"），用于框架日志归属 */
     private String logTag;
     
+    /** RPC 任务装饰器，用于在每次 RPC 调用前后注入线程上下文（如 ModuleContext） */
+    private java.util.function.UnaryOperator<Runnable> taskDecorator;
+    
     /** 是否已启动（使用 AtomicBoolean 确保线程安全） */
     private final java.util.concurrent.atomic.AtomicBoolean running = new java.util.concurrent.atomic.AtomicBoolean(false);
     
@@ -406,7 +409,16 @@ public class RpcServer {
     public String getLogTag() {
         return logTag;
     }
-    
+
+    public RpcServer taskDecorator(java.util.function.UnaryOperator<Runnable> taskDecorator) {
+        this.taskDecorator = taskDecorator;
+        return this;
+    }
+
+    public java.util.function.UnaryOperator<Runnable> getTaskDecorator() {
+        return taskDecorator;
+    }
+
     /**
      * 设置完整的服务地址（host:port）
      */

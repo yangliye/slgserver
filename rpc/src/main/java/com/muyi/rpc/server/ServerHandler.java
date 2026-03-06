@@ -86,7 +86,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
         }
         
         if (msg.getData() instanceof RpcRequest request) {
-            EXECUTOR.execute(() -> {
+            Runnable task = () -> {
                 String tag = rpcServer.getLogTag();
                 if (tag != null) {
                     GameLog.set(tag, String.valueOf(rpcServer.getServerId()));
@@ -113,7 +113,10 @@ public class ServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
                 } finally {
                     GameLog.clear();
                 }
-            });
+            };
+            
+            var decorator = rpcServer.getTaskDecorator();
+            EXECUTOR.execute(decorator != null ? decorator.apply(task) : task);
         }
     }
     
