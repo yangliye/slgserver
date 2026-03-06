@@ -78,10 +78,7 @@ public abstract class AbstractGameModule implements GameModule {
             this.rpcServer = new RpcServer(rpcPort, buildRpcServerConfig(config));
             rpcServer.serverId(config.getServerId());
             rpcServer.logTag(name());
-            rpcServer.taskDecorator(task -> () -> {
-                ModuleContext.setCurrent(this);
-                task.run();
-            });
+            rpcServer.taskDecorator(task -> () -> ModuleContext.runWith(this, task));
             rpcServer.sharedEventLoopGroup(SharedEventLoopGroup.getInstance());
             if (config.getHost() != null) {
                 rpcServer.host(config.getHost());

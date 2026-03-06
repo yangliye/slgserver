@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 模块感知的线程池，每次任务执行前自动设置 {@link ModuleContext} 上下文。
+ * 模块感知的线程池，每次任务执行时自动绑定 {@link ModuleContext} 上下文。
  */
 class ModuleAwareThreadPool extends ThreadPoolExecutor {
 
@@ -25,8 +25,7 @@ class ModuleAwareThreadPool extends ThreadPoolExecutor {
     }
 
     @Override
-    protected void beforeExecute(Thread t, Runnable r) {
-        ModuleContext.setCurrent(owner);
-        super.beforeExecute(t, r);
+    public void execute(Runnable command) {
+        super.execute(() -> ModuleContext.runWith(owner, command));
     }
 }

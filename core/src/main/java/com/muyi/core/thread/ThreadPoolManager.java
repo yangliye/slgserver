@@ -142,10 +142,7 @@ public class ThreadPoolManager {
         checkName(name);
         ThreadFactory vf = Thread.ofVirtual().name(moduleName + "-" + name + "-", 0).factory();
         AbstractGameModule mod = this.owner;
-        ThreadFactory wrapped = r -> vf.newThread(() -> {
-            ModuleContext.setCurrent(mod);
-            r.run();
-        });
+        ThreadFactory wrapped = r -> vf.newThread(() -> ModuleContext.runWith(mod, r));
         ExecutorService pool = Executors.newThreadPerTaskExecutor(wrapped);
         pools.put(name, pool);
         logger.info("Created virtual pool [{}]", name);

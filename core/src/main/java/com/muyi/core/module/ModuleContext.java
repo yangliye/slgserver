@@ -1,10 +1,17 @@
 package com.muyi.core.module;
 
 /**
- * 模块上下文
+ * 模块上下文（基于 ScopedValue）
  * <p>
- * 通过 {@link #current()} 获取当前线程所属的模块实例，
- * 由 {@link com.muyi.core.thread.ThreadPoolManager} 在每次任务执行前自动设置。
+ * 通过 {@link #current()} 获取当前作用域所属的模块实例。
+ * 由框架在任务执行时通过 {@link #runWith(AbstractGameModule, Runnable)} 自动绑定。
+ * <p>
+ * 相比 ThreadLocal 的优势：
+ * <ul>
+ *   <li>不可变 — 作用域内无法修改，避免意外篡改</li>
+ *   <li>自动清理 — 作用域结束值自动消失，不可能泄漏</li>
+ *   <li>虚拟线程友好 — 性能更优</li>
+ * </ul>
  * <p>
  * 使用示例：
  * <pre>{@code
@@ -14,33 +21,42 @@ package com.muyi.core.module;
  */
 public final class ModuleContext {
 
-    private static final ThreadLocal<AbstractGameModule> CURRENT = new ThreadLocal<>();
+    private static final ScopedValue<AbstractGameModule> CURRENT = ScopedValue.newInstance();
 
     private ModuleContext() {
     }
 
     /**
-     * 设置当前线程所属模块（由 ThreadPoolManager 在任务执行前调用）
+     * 在指定模块上下文中执行任务
+     *
+     * @param module 模块实例
+     * @param task   执行体
      */
-    public static void setCurrent(AbstractGameModule module) {
-        CURRENT.set(module);
+    public static void runWith(AbstractGameModule module, Runnable task) {
+        ScopedValue.where(CURRENT, module).run(task);
     }
 
     /**
-     * 获取当前线程所属模块
+     * 在指定模块上下文中执行任务（有返回值）
+     */
+    public static <R> R callWith(AbstractGameModule module, java.util.concurrent.Callable<R> task) throws Exception {
+        return ScopedValue.where(CURRENT, module).call(task::call);
+    }
+
+    /**
+     * 获取当前作用域所属模块
      *
-     * @throws IllegalStateException 如果当前线程不属于任何模块
+     * @throws IllegalStateException 如果当前作用域不属于任何模块
      */
     public static AbstractGameModule current() {
-        AbstractGameModule module = CURRENT.get();
-        if (module == null) {
-            throw new IllegalStateException("No module bound to current thread: " + Thread.currentThread().getName());
+        if (!CURRENT.isBound()) {
+            throw new IllegalStateException("No module bound to current scope: " + Thread.currentThread().getName());
         }
-        return module;
+        return CURRENT.get();
     }
 
     /**
-     * 获取当前线程所属模块（带类型转换）
+     * 获取当前作用域所属模块（带类型转换）
      * <pre>{@code
      * GameModule game = ModuleContext.current(GameModule.class);
      * int serverId = game.getServerId();
@@ -58,9 +74,9 @@ public final class ModuleContext {
     }
 
     /**
-     * 获取当前线程所属模块，不属于任何模块返回 null
+     * 获取当前作用域所属模块，不属于任何模块返回 null
      */
     public static AbstractGameModule currentOrNull() {
-        return CURRENT.get();
+        return CURRENT.isBound() ? CURRENT.get() : null;
     }
 }
