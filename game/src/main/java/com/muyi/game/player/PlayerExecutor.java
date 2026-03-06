@@ -1,7 +1,8 @@
 package com.muyi.game.player;
 
-import com.muyi.game.data.AbstractPlayerManager;
-import com.muyi.game.data.PlayerDataContext;
+import com.muyi.game.playerdata.AbstractPlayerComponent;
+import com.muyi.game.playerdata.AbstractPlayerManager;
+import com.muyi.game.playerdata.PlayerDataContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +111,17 @@ public class PlayerExecutor {
     }
 
     /**
-     * 获取指定类型的 Manager
+     * 获取指定类型的组件（Manager 或 Logic）
+     */
+    public <C extends AbstractPlayerComponent> C getComponent(Class<C> clazz) {
+        if (dataContext == null) {
+            return null;
+        }
+        return dataContext.getComponent(clazz);
+    }
+
+    /**
+     * 获取指定类型的 Manager（便捷方法）
      */
     public <M extends AbstractPlayerManager<?>> M getManager(Class<M> clazz) {
         if (dataContext == null) {

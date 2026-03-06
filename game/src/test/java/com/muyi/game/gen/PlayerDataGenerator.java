@@ -169,8 +169,8 @@ public class PlayerDataGenerator {
 
         StringBuilder sb = new StringBuilder();
         sb.append("package ").append(MANAGER_PKG).append(";\n\n");
-        sb.append("import com.muyi.game.data.AbstractPlayerManager;\n");
-        sb.append("import com.muyi.game.data.PlayerData;\n");
+        sb.append("import com.muyi.game.playerdata.AbstractPlayerManager;\n");
+        sb.append("import com.muyi.game.playerdata.PlayerData;\n");
         sb.append("import ").append(ENTITY_PKG).append(".").append(entityClass).append(";\n\n");
         sb.append("import java.util.Collection;\n\n");
 

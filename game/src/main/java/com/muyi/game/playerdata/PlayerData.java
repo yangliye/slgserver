@@ -1,4 +1,4 @@
-package com.muyi.game.data;
+package com.muyi.game.playerdata;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

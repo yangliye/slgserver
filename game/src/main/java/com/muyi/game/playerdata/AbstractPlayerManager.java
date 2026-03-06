@@ -1,9 +1,7 @@
-package com.muyi.game.data;
+package com.muyi.game.playerdata;
 
 import com.muyi.db.DbManager;
 import com.muyi.db.core.BaseEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -12,7 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 玩家数据 Manager 基类
+ * 玩家数据 Manager 基类（有 DB 实体）
  * <p>
  * 每个在线玩家持有一组 Manager 实例，每个 Manager 管理一种类型的数据。
  * 子类只需要实现 {@link #entityClass()} 和 {@link #keyOf(BaseEntity)}，
@@ -35,14 +33,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <T> 实体类型
  * @author muyi
+ * @see AbstractPlayerLogic
  */
-public abstract class AbstractPlayerManager<T extends BaseEntity<T>> {
+public abstract class AbstractPlayerManager<T extends BaseEntity<T>> extends AbstractPlayerComponent {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    private long uid;
     private DbManager db;
-    private PlayerDataContext context;
     private final Map<Integer, T> dataMap = new ConcurrentHashMap<>();
 
     // ==================== 子类必须实现 ====================
@@ -74,38 +69,28 @@ public abstract class AbstractPlayerManager<T extends BaseEntity<T>> {
     protected void afterLoad() {
     }
 
-    /**
-     * 玩家登录后回调（在所有 Manager 都加载完成后触发）
-     */
-    protected void onLogin() {
-    }
-
-    /**
-     * 玩家登出时回调（用于清理定时器、保存临时数据等）
-     */
-    protected void onLogout() {
-    }
-
     // ==================== 框架调用（包级可见）====================
 
-    void init(long uid, DbManager db, PlayerDataContext context) {
-        this.uid = uid;
-        this.db = db;
-        this.context = context;
+    @Override
+    void initComponent(long uid, PlayerDataContext context) {
+        super.initComponent(uid, context);
+        this.db = context.db();
     }
 
+    @Override
     void load() {
         T template = newEntity();
-        List<T> entities = db.selectByCondition(template, Map.of(loadColumn(), uid));
+        List<T> entities = db.selectByCondition(template, Map.of(loadColumn(), getUid()));
         for (T entity : entities) {
             dataMap.put(keyOf(entity), entity);
         }
         afterLoad();
-        log.debug("Player[{}] loaded {} {} records", uid, dataMap.size(), entityClass().getSimpleName());
+        log.debug("Player[{}] loaded {} {} records", getUid(), dataMap.size(), entityClass().getSimpleName());
     }
 
+    @Override
     void clear() {
-        onLogout();
+        super.clear();
         dataMap.clear();
     }
 
@@ -164,19 +149,8 @@ public abstract class AbstractPlayerManager<T extends BaseEntity<T>> {
 
     // ==================== 工具方法 ====================
 
-    protected long getUid() {
-        return uid;
-    }
-
     protected DbManager getDb() {
         return db;
-    }
-
-    /**
-     * 获取其他 Manager（用于跨 Manager 访问数据）
-     */
-    protected <M extends AbstractPlayerManager<?>> M getManager(Class<M> clazz) {
-        return context.getManager(clazz);
     }
 
     private T newEntity() {

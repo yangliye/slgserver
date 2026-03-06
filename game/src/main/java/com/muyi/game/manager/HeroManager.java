@@ -1,7 +1,7 @@
 package com.muyi.game.manager;
 
-import com.muyi.game.data.AbstractPlayerManager;
-import com.muyi.game.data.PlayerData;
+import com.muyi.game.playerdata.AbstractPlayerManager;
+import com.muyi.game.playerdata.PlayerData;
 import com.muyi.game.entity.HeroEntity;
 
 import java.util.Collection;
