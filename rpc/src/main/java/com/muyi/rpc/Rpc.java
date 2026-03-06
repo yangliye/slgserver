@@ -9,7 +9,6 @@ import com.muyi.rpc.registry.ZookeeperServiceRegistry;
 import com.muyi.rpc.serialize.Serializer;
 import com.muyi.rpc.serialize.SerializerFactory;
 import com.muyi.rpc.server.RpcServer;
-import com.muyi.rpc.server.RpcServerConfig;
 
 /**
  * RPC 框架统一入口
@@ -293,84 +292,6 @@ public final class Rpc {
         }
     }
     
-    // ==================== 链式调用 Builder ====================
-    
-    public static class RpcBuilder {
-        
-        /** 注册服务 */
-        public RpcBuilder register(Object service) {
-            Rpc.register(service);
-            return this;
-        }
-        
-        /** 
-         * 设置主机地址
-         * 注意：必须在 register() 之前调用，否则不会生效
-         */
-        public RpcBuilder host(String host) {
-            if (server != null) {
-                throw new IllegalStateException("host() must be called before register(). Server already created.");
-            }
-            Rpc.host = host;
-            return this;
-        }
-        
-        /** 
-         * 设置权重
-         * 注意：必须在 register() 之前调用，否则不会生效
-         */
-        public RpcBuilder weight(int weight) {
-            if (server != null) {
-                throw new IllegalStateException("weight() must be called before register(). Server already created.");
-            }
-            Rpc.weight = weight;
-            return this;
-        }
-        
-        /** 启动服务端 */
-        public void start() throws Exception {
-            Rpc.start();
-        }
-    }
-    
-    // ==================== 客户端连接包装类 ====================
-    
-    /**
-     * 客户端连接包装类，包含 RpcProxyManager 和 ZookeeperServiceRegistry
-     * 用于统一管理资源关闭
-     */
-    public static class ClientConnection implements AutoCloseable {
-        private final RpcProxyManager proxyManager;
-        private final ZookeeperServiceRegistry registry;
-        
-        ClientConnection(RpcProxyManager proxyManager, ZookeeperServiceRegistry registry) {
-            this.proxyManager = proxyManager;
-            this.registry = registry;
-        }
-        
-        public RpcProxyManager getProxyManager() {
-            return proxyManager;
-        }
-        
-        public ZookeeperServiceRegistry getRegistry() {
-            return registry;
-        }
-        
-        @Override
-        public void close() {
-            if (proxyManager != null) {
-                proxyManager.shutdown();
-            }
-            if (registry != null) {
-                registry.shutdown();
-            }
-        }
-        
-        public void shutdown() {
-            close();
-        }
-    }
-    
     // ==================== 高级 API（独立实例）====================
     
     /**
@@ -387,167 +308,17 @@ public final class Rpc {
         return new ClientBuilder();
     }
     
-    // ==================== 独立服务端 Builder ====================
+    // ==================== 包级访问方法（供 RpcBuilder 使用）====================
     
-    public static class ServerBuilder {
-        private final int port;
-        private int serverId = 1;
-        private String zkAddress;
-        private String host;
-        private int weight = 100;
-        private int idleTimeout = 60;
-        private RpcServer server;
-        private ZookeeperServiceRegistry registry;
-        
-        ServerBuilder(int port) {
-            this.port = port;
-        }
-        
-        public ServerBuilder serverId(int serverId) {
-            this.serverId = serverId;
-            return this;
-        }
-        
-        public ServerBuilder zookeeper(String zkAddress) {
-            this.zkAddress = zkAddress;
-            return this;
-        }
-        
-        public ServerBuilder host(String host) {
-            this.host = host;
-            return this;
-        }
-        
-        public ServerBuilder weight(int weight) {
-            this.weight = weight;
-            return this;
-        }
-        
-        public ServerBuilder idleTimeout(int seconds) {
-            this.idleTimeout = seconds;
-            return this;
-        }
-        
-        /** 注册服务（可链式调用多次）*/
-        public ServerBuilder register(Object service) {
-            ensureCreated();
-            server.registerService(service);
-            return this;
-        }
-        
-        /** 启动服务 */
-        public RpcServer start() throws Exception {
-            ensureCreated();
-            server.start();
-            return server;
-        }
-        
-        private void ensureCreated() {
-            if (server == null) {
-                if (zkAddress == null) {
-                    throw new IllegalStateException("ZooKeeper address is required. Call zookeeper() first.");
-                }
-                registry = new ZookeeperServiceRegistry(zkAddress);
-                registry.setWeight(weight);
-                registry.setServerId(String.valueOf(serverId));
-                
-                server = new RpcServer(port, new RpcServerConfig().readerIdleTimeSeconds(idleTimeout))
-                        .registry(registry)
-                        .serverId(serverId);
-                
-                if (host != null) {
-                    server.host(host);
-                }
-            }
-        }
+    static RpcServer serverInstance() {
+        return server;
     }
     
-    // ==================== 独立客户端 Builder ====================
+    static void setHostInternal(String h) {
+        host = h;
+    }
     
-    public static class ClientBuilder {
-        private String zkAddress;
-        private long timeout = 10_000;
-        private int retries = 1;
-        private int connectTimeout = 3_000;
-        private int maxConnections = 10;
-        
-        ClientBuilder() {}
-        
-        public ClientBuilder zookeeper(String zkAddress) {
-            this.zkAddress = zkAddress;
-            return this;
-        }
-        
-        public ClientBuilder timeout(long timeout) {
-            this.timeout = timeout;
-            return this;
-        }
-        
-        public ClientBuilder retries(int retries) {
-            this.retries = retries;
-            return this;
-        }
-        
-        public ClientBuilder connectTimeout(int connectTimeout) {
-            this.connectTimeout = connectTimeout;
-            return this;
-        }
-        
-        public ClientBuilder maxConnections(int maxConnections) {
-            this.maxConnections = maxConnections;
-            return this;
-        }
-        
-        public RpcProxyManager connect() {
-            if (zkAddress == null) {
-                throw new IllegalStateException("ZooKeeper address is required. Call zookeeper() first.");
-            }
-            
-            ZookeeperServiceRegistry registry = new ZookeeperServiceRegistry(zkAddress);
-            
-            RpcClientConfig clientConfig = new RpcClientConfig()
-                    .requestTimeout(timeout)
-                    .retries(retries)
-                    .connectTimeout(connectTimeout)
-                    .maxConnectionsPerAddress(maxConnections);
-            
-            RpcProxyManager manager = new RpcProxyManager()
-                    .discovery(registry)
-                    .clientConfig(clientConfig)
-                    .init();
-            
-            // 保存 registry 引用，在 manager shutdown 时会通过 discovery 的 shutdown 方法关闭
-            // 注意：RpcProxyManager.shutdown() 不会关闭 discovery，需要手动调用 registry.shutdown()
-            // 返回包装对象或文档说明用户需要手动关闭 registry
-            // 这里记录日志提醒用户
-            org.slf4j.LoggerFactory.getLogger(Rpc.class)
-                    .info("Created independent RpcProxyManager. Remember to call registry.shutdown() when done.");
-            
-            return manager;
-        }
-        
-        /**
-         * 创建客户端并返回包含 registry 的包装对象，方便统一关闭
-         */
-        public ClientConnection connectWithRegistry() {
-            if (zkAddress == null) {
-                throw new IllegalStateException("ZooKeeper address is required. Call zookeeper() first.");
-            }
-            
-            ZookeeperServiceRegistry registry = new ZookeeperServiceRegistry(zkAddress);
-            
-            RpcClientConfig clientConfig = new RpcClientConfig()
-                    .requestTimeout(timeout)
-                    .retries(retries)
-                    .connectTimeout(connectTimeout)
-                    .maxConnectionsPerAddress(maxConnections);
-            
-            RpcProxyManager manager = new RpcProxyManager()
-                    .discovery(registry)
-                    .clientConfig(clientConfig)
-                    .init();
-            
-            return new ClientConnection(manager, registry);
-        }
+    static void setWeightInternal(int w) {
+        weight = w;
     }
 }

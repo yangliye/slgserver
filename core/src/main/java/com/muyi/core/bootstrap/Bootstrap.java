@@ -3,8 +3,8 @@ package com.muyi.core.bootstrap;
 import com.muyi.common.redis.RedisManager;
 import com.muyi.common.util.log.GameLog;
 import com.muyi.core.config.ModuleConfig;
+import com.muyi.core.config.InstanceConfig;
 import com.muyi.core.config.ServerConfig;
-import com.muyi.core.config.ServerConfig.InstanceConfig;
 import com.muyi.core.module.GameModule;
 import com.muyi.rpc.transport.SharedEventLoopGroup;
 import org.slf4j.Logger;
@@ -88,8 +88,16 @@ public class Bootstrap {
             RedisManager.register("global", globalRedis);
         }
         
-        // 按配置顺序启动所有实例
-        for (InstanceConfig instance : serverConfig.getInstances()) {
+        // 按模块优先级排序后启动（priority 越小越先启动）
+        List<InstanceConfig> sortedInstances = new ArrayList<>(serverConfig.getInstances());
+        sortedInstances.sort((a, b) -> {
+            GameModule ma = registry.get(a.module);
+            GameModule mb = registry.get(b.module);
+            int pa = ma != null ? ma.priority() : Integer.MAX_VALUE;
+            int pb = mb != null ? mb.priority() : Integer.MAX_VALUE;
+            return Integer.compare(pa, pb);
+        });
+        for (InstanceConfig instance : sortedInstances) {
             startInstance(instance);
         }
         
@@ -204,19 +212,6 @@ public class Bootstrap {
      */
     public ModuleRegistry getRegistry() {
         return registry;
-    }
-    
-    /**
-     * 已启动的模块信息
-     */
-    private static class StartedModule {
-        final String instanceId;
-        final GameModule module;
-        
-        StartedModule(String instanceId, GameModule module) {
-            this.instanceId = instanceId;
-            this.module = module;
-        }
     }
     
     // ==================== 静态入口 ====================

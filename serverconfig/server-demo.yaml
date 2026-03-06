@@ -79,17 +79,15 @@ rpcClient:
   wheelTimerTickMs: 100             # tick 间隔（毫秒）
   wheelTimerTicks: 512              # 槽数
 
-# ==================== 配置模块设置 ====================
-config:
-  configRoot: serverconfig/gamedata
-  configPackage: com.muyi.config.entity
-
 # ==================== 实例配置 ====================
-# 启动时按顺序加载所有实例
+# 启动时按模块优先级排序后加载（priority 越小越先启动）
 instances:
 
-  # ---------- 配置模块 ----------
+  # ---------- 配置模块（priority=-1000，最先启动） ----------
   - module: config
+    extra:
+      configRoot: serverconfig/gamedata
+      configPackage: com.muyi.config.entity
 
   # ---------- 登录服务 ----------
   - module: login

@@ -387,30 +387,4 @@ public class ServerMigrator {
         return migrationTasks.containsKey(playerId);
     }
     
-    /**
-     * 迁服任务
-     */
-    private static class MigrationTask {
-        private final MigrationRequest request;
-        private final Session session;
-        private final long startTime;
-        
-        public MigrationTask(MigrationRequest request, Session session) {
-            this.request = request;
-            this.session = session;
-            this.startTime = TimeUtils.currentTimeMillis();
-        }
-        
-        public MigrationRequest getRequest() {
-            return request;
-        }
-        
-        public Session getSession() {
-            return session;
-        }
-        
-        public long getStartTime() {
-            return startTime;
-        }
-    }
 }

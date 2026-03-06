@@ -82,10 +82,6 @@ public class ServerConfig {
     /** 实例配置列表 */
     private List<InstanceConfig> instances = new ArrayList<>();
     
-    /** 配置模块设置 */
-    private String configRoot = "serverconfig/gamedata";
-    private String configPackage;
-    
     /**
      * 从 YAML 文件加载配置
      */
@@ -151,6 +147,8 @@ public class ServerConfig {
                 inst.serverId = ((Number) instData.getOrDefault("serverId", 1)).intValue();
                 inst.rpcPort = ((Number) instData.getOrDefault("rpcPort", 0)).intValue();
                 inst.webPort = ((Number) instData.getOrDefault("webPort", 0)).intValue();
+                inst.tcpPort = ((Number) instData.getOrDefault("tcpPort", 0)).intValue();
+                inst.groovyEnabled = Boolean.TRUE.equals(instData.get("groovyEnabled"));
                 
                 // Redis 配置
                 inst.redisAddress = (String) instData.get("redis");
@@ -199,11 +197,6 @@ public class ServerConfig {
             config.redisMaxWaitSeconds = ((Number) redisData.getOrDefault("maxWaitSeconds", 3)).intValue();
             config.redisConnectTimeout = ((Number) redisData.getOrDefault("connectTimeout", 3000)).intValue();
         }
-        
-        // 配置模块设置
-        Map<String, Object> configSection = (Map<String, Object>) data.getOrDefault("config", new HashMap<>());
-        config.configRoot = (String) configSection.getOrDefault("configRoot", "serverconfig/gamedata");
-        config.configPackage = (String) configSection.get("configPackage");
         
         return config;
     }
@@ -282,6 +275,7 @@ public class ServerConfig {
                 .host(host)
                 .rpcPort(instance.rpcPort)
                 .webPort(instance.webPort)
+                .tcpPort(instance.tcpPort)
                 .zkAddress(zkAddress)
                 .zkSessionTimeout(zkSessionTimeout)
                 .zkConnectionTimeout(zkConnectionTimeout)
@@ -299,13 +293,8 @@ public class ServerConfig {
                 .rpcBacklog(instance.rpcBacklog)
                 .rpcServerConfig(instance.rpcServerConfig)
                 .rpcClientConfig(instance.rpcClientConfig != null ? instance.rpcClientConfig : rpcClientConfig)
+                .groovyEnabled(instance.groovyEnabled)
                 .extras(instance.extra);
-        
-        // config 模块的特殊配置
-        if ("config".equals(instance.module)) {
-            config.extra("configRoot", configRoot);
-            config.extra("configPackage", configPackage);
-        }
         
         return config;
     }
@@ -362,22 +351,6 @@ public class ServerConfig {
         this.redisAddress = redisAddress;
     }
     
-    public String getConfigRoot() {
-        return configRoot;
-    }
-    
-    public void setConfigRoot(String configRoot) {
-        this.configRoot = configRoot;
-    }
-    
-    public String getConfigPackage() {
-        return configPackage;
-    }
-    
-    public void setConfigPackage(String configPackage) {
-        this.configPackage = configPackage;
-    }
-    
     public int getRpcWorkerThreads() {
         return rpcWorkerThreads;
     }
@@ -414,61 +387,4 @@ public class ServerConfig {
         return instances;
     }
     
-    /**
-     * 实例配置
-     */
-    public static class InstanceConfig {
-        /** 模块名称 */
-        public String module;
-        
-        /** 服务器ID */
-        public int serverId;
-        
-        /** RPC 端口 */
-        public int rpcPort;
-        
-        /** Web 端口 */
-        public int webPort;
-        
-        /** Redis 地址（host:port 或 host:port:password） */
-        public String redisAddress;
-        
-        /** 数据库配置 */
-        public String jdbcUrl;
-        public String jdbcUser;
-        public String jdbcPassword;
-        
-        /** 数据库完整配置 */
-        public DbConfig dbConfig;
-        
-        /** RPC 服务端配置 */
-        public int rpcReaderIdleTimeSeconds;
-        public int rpcSendBufferSize;
-        public int rpcReceiveBufferSize;
-        public int rpcBacklog;
-        
-        /** RPC 服务端完整配置 */
-        public RpcServerConfig rpcServerConfig;
-        
-        /** RPC 客户端配置（实例级，为 null 时使用全局） */
-        public RpcClientConfig rpcClientConfig;
-        
-        /** 扩展配置 */
-        public Map<String, Object> extra = new HashMap<>();
-        
-        public InstanceConfig() {
-        }
-        
-        /**
-         * 获取实例唯一标识
-         */
-        public String getInstanceId() {
-            return module + "-" + serverId;
-        }
-        
-        @Override
-        public String toString() {
-            return module + "-" + serverId + "(rpc=" + rpcPort + ", web=" + webPort + ")";
-        }
-    }
 }
