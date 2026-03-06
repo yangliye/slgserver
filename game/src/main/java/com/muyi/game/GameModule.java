@@ -3,6 +3,7 @@ package com.muyi.game;
 import com.muyi.core.module.AbstractGameModule;
 import com.muyi.core.web.WebServer;
 import com.muyi.game.controller.GameGmController;
+import com.muyi.game.data.PlayerDataRegistry;
 import com.muyi.game.handler.GameMessageDispatcher;
 import com.muyi.game.player.GatePusher;
 import com.muyi.game.player.PlayerExecutorManager;
@@ -29,6 +30,7 @@ public class GameModule extends AbstractGameModule {
     protected GameGmController gmController;
     protected PlayerExecutorManager playerExecutorManager;
     protected GameMessageDispatcher messageDispatcher;
+    protected PlayerDataRegistry playerDataRegistry;
     private GameServiceImpl gameService;
     
     @Override
@@ -60,6 +62,10 @@ public class GameModule extends AbstractGameModule {
     protected void doInit() {
         com.muyi.proto.MessageRegistry.init();
         
+        // 初始化玩家数据注册中心
+        playerDataRegistry = new PlayerDataRegistry(dbManager);
+        playerDataRegistry.scan(getManagerScanPackages());
+        
         // 初始化玩家执行器管理器
         GatePusher gatePusher = createGatePusher();
         playerExecutorManager = new PlayerExecutorManager(
@@ -76,8 +82,9 @@ public class GameModule extends AbstractGameModule {
         // 初始化 GM 控制器
         gmController = createGmController();
         
-        log.info("Game module initialized, serverId={}, playerStripes={}", 
-                config != null ? config.getServerId() : -1, getPlayerStripes());
+        log.info("Game module initialized, serverId={}, playerStripes={}, managers={}", 
+                config != null ? config.getServerId() : -1,
+                getPlayerStripes(), playerDataRegistry.getManagerCount());
     }
     
     /**
@@ -98,11 +105,18 @@ public class GameModule extends AbstractGameModule {
     }
     
     /**
+     * Manager 扫描包名，子类可重写以添加更多包
+     */
+    protected String[] getManagerScanPackages() {
+        return new String[]{"com.muyi.game.manager"};
+    }
+    
+    /**
      * 注册消息处理器，子类重写以添加更多业务 handler
      */
     protected void registerMessageHandlers(GameMessageDispatcher dispatcher) {
         dispatcher.register(com.muyi.proto.MsgId.PLAYER_LOGIN_REQ_VALUE,
-                new com.muyi.game.handler.player.PlayerLoginHandler(playerExecutorManager));
+                new com.muyi.game.handler.player.PlayerLoginHandler(playerExecutorManager, playerDataRegistry));
     }
     
     /**
@@ -130,5 +144,9 @@ public class GameModule extends AbstractGameModule {
     
     public GameMessageDispatcher getMessageDispatcher() {
         return messageDispatcher;
+    }
+    
+    public PlayerDataRegistry getPlayerDataRegistry() {
+        return playerDataRegistry;
     }
 }

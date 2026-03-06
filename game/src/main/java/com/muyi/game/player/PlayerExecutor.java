@@ -1,16 +1,19 @@
 package com.muyi.game.player;
 
+import com.muyi.game.data.AbstractPlayerManager;
+import com.muyi.game.data.PlayerDataContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * 玩家消息执行器
  * <p>
- * 代表一个在线玩家的会话，持有 {@link PlayerToken} 和消息推送能力。
+ * 代表一个在线玩家的会话，持有 {@link PlayerToken}、消息推送能力和 {@link PlayerDataContext}。
  * 本身不持有线程资源，消息的线程调度由 {@link PlayerExecutorManager} 的条带化线程池负责。
  * <p>
  * 核心能力：
  * <ul>
+ *   <li>数据管理 — 通过 {@link PlayerDataContext} 管理所有玩家数据</li>
  *   <li>认证校验 — 通过 token 验证消息来源合法性</li>
  *   <li>消息推送 — 通过 {@link GatePusher} 向玩家所在 gate 推送消息</li>
  *   <li>连接路由 — 通过 {@link PlayerToken} 知道玩家在哪个 gate/world</li>
@@ -23,6 +26,7 @@ public class PlayerExecutor {
     private final long uid;
     private final PlayerToken token;
     private final GatePusher gatePusher;
+    private PlayerDataContext dataContext;
 
     public PlayerExecutor(long uid, PlayerToken token, GatePusher gatePusher) {
         this.uid = uid;
@@ -93,5 +97,25 @@ public class PlayerExecutor {
 
     public int getWorldServerId() {
         return token.getWorldServerId();
+    }
+
+    // ==================== 玩家数据 ====================
+
+    public PlayerDataContext getDataContext() {
+        return dataContext;
+    }
+
+    public void setDataContext(PlayerDataContext dataContext) {
+        this.dataContext = dataContext;
+    }
+
+    /**
+     * 获取指定类型的 Manager
+     */
+    public <M extends AbstractPlayerManager<?>> M getManager(Class<M> clazz) {
+        if (dataContext == null) {
+            return null;
+        }
+        return dataContext.getManager(clazz);
     }
 }

@@ -24,4 +24,5 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'ch.qos.logback:logback-classic:1.5.27'
+    testImplementation 'com.mysql:mysql-connector-j:9.2.0'
 }
