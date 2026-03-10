@@ -7,6 +7,7 @@ param(
     [switch]$Clean,           # 清理后构建
     [switch]$Test,            # 运行测试（默认跳过）
     [switch]$Publish,         # 发布到本地 Maven 仓库
+    [switch]$Package,         # 打包分发到 out/ 目录
     [string]$Module = ""      # 指定模块 (db/rpc)
 )
 
@@ -33,6 +34,7 @@ Write-Host "  Project Root: $projectRoot"
 Write-Host "  Clean Build:  $Clean"
 Write-Host "  Run Tests:    $Test"
 Write-Host "  Publish:      $Publish"
+Write-Host "  Package:      $Package"
 Write-Host "  Module:       $(if ($Module) { $Module } else { 'All' })"
 Write-Host ""
 
@@ -45,7 +47,10 @@ if ($Clean) {
 }
 
 # 确定构建目标
-if ($Module) {
+if ($Package) {
+    # 打包分发模式：直接执行 packageDist（会自动编译依赖模块）
+    $gradleArgs += ":launcher:packageDist"
+} elseif ($Module) {
     # 指定模块
     $gradleArgs += ":${Module}:build"
     if ($Publish) {
@@ -105,6 +110,16 @@ if (-not $Module -or $Module -eq "rpc") {
         Write-Host "  [rpc] $($rpcJar.Name) ($([math]::Round($rpcJar.Length/1KB, 1)) KB)" -ForegroundColor White
         Write-Host "        $($rpcJar.FullName)" -ForegroundColor DarkGray
     }
+}
+
+if ($Package) {
+    Write-Host ""
+    Write-Host "[Distribution]" -ForegroundColor Yellow
+    $outDir = "$projectRoot\out"
+    $jarCount = (Get-ChildItem "$outDir\lib\*.jar" -ErrorAction SilentlyContinue).Count
+    Write-Host "  Output:   $outDir" -ForegroundColor White
+    Write-Host "  JARs:     $jarCount" -ForegroundColor White
+    Write-Host "  Start:    $outDir\start.bat" -ForegroundColor DarkGray
 }
 
 if ($Publish) {

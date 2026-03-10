@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    // 所有业务模块（会传递依赖 core, common, rpc, db, proto, shared, config）
+    implementation project(':login')
+    implementation project(':gate')
+    implementation project(':game')
+    implementation project(':world')
+    implementation project(':alliance')
+
+    // 运行时需要的驱动
+    runtimeOnly 'com.mysql:mysql-connector-j:9.2.0'
+}
+
+// launcher 模块不需要自身的 JAR
+jar.enabled = false
+
+// ==================== 打包分发 ====================
+
+def outDir = rootProject.file('out')
+
+tasks.register('packageDist', Sync) {
+    group = 'distribution'
+    description = 'Package server distribution to out/ directory'
+
+    into outDir
+
+    // 所有运行时依赖 JAR → out/lib/
+    into('lib') {
+        from configurations.runtimeClasspath
+    }
+
+    // 配置文件 → out/serverconfig/
+    into('serverconfig') {
+        from rootProject.file('serverconfig')
+    }
+
+    // 启动脚本 → out/
+    from('scripts') {
+        include '*.bat'
+        include '*.sh'
+        filePermissions {
+            unix("rwxr-xr-x")
+        }
+    }
+
+    // 保留运行时产生的 logs 目录
+    preserve {
+        include 'logs/**'
+    }
+
+    doLast {
+        // 确保 logs 目录存在
+        new File(outDir, 'logs').mkdirs()
+
+        // 统计信息
+        def libCount = new File(outDir, 'lib').listFiles()?.length ?: 0
+        println ""
+        println "=========================================="
+        println "  Distribution packaged to: ${outDir.absolutePath}"
+        println "  JARs: ${libCount}"
+        println "=========================================="
+    }
+}

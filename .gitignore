@@ -5,6 +5,9 @@ bin/
 gradle/dists/
 gradle/wrapper/dists/
 
+# Distribution output
+out/
+
 # IDE
 .idea/
 *.iml

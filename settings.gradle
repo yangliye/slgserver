@@ -22,3 +22,6 @@ include 'gate'
 include 'game'
 include 'world'
 include 'alliance'
+
+// 启动 & 打包
+include 'launcher'

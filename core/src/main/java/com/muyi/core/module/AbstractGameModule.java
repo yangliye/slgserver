@@ -86,7 +86,6 @@ public abstract class AbstractGameModule implements GameModule {
             if (zkRegistry != null) {
                 rpcServer.registry(zkRegistry);
             }
-            registerRpcServices(rpcServer);
         }
         
         // 初始化 RPC 客户端（有 ZK 地址就创建，用于调用其他模块的服务）
@@ -128,7 +127,15 @@ public abstract class AbstractGameModule implements GameModule {
         // 初始化线程池管理器（传入 this，所有线程池任务执行前自动设置模块上下文）
         this.poolManager = new ThreadPoolManager(name(), this);
         
-        // 初始化 Web 服务
+        // 子类自定义初始化（在基础设施就绪后、注册服务和路由前执行）
+        doInit();
+        
+        // 注册 RPC 服务（doInit 之后，确保 service 实例已创建）
+        if (rpcServer != null) {
+            registerRpcServices(rpcServer);
+        }
+        
+        // 初始化 Web 服务（doInit 之后，确保 controller 实例已创建）
         int webPort = webPort();
         if (webPort > 0) {
             this.webServer = new WebServer(webPort).moduleContext(name(), String.valueOf(config.getServerId()));
@@ -138,9 +145,6 @@ public abstract class AbstractGameModule implements GameModule {
                 new GroovyHandler(this).register(webServer);
             }
         }
-        
-        // 子类自定义初始化
-        doInit();
         
         log.info("Module initialized");
     }
