@@ -112,11 +112,20 @@ public class GameModule extends AbstractGameModule {
     }
     
     /**
-     * 注册消息处理器，子类重写以添加更多业务 handler
+     * 注册消息处理器
+     * <p>
+     * 默认自动扫描 {@link #getHandlerScanPackages()} 下所有 @MsgHandler 注解的 handler。
+     * 子类可重写追加手动注册。
      */
     protected void registerMessageHandlers(GameMessageDispatcher dispatcher) {
-        dispatcher.register(com.muyi.proto.MsgId.PLAYER_LOGIN_REQ_VALUE,
-                new com.muyi.game.handler.player.PlayerLoginHandler(playerExecutorManager, playerDataRegistry));
+        dispatcher.scanAndRegister(getHandlerScanPackages(), this);
+    }
+    
+    /**
+     * Handler 扫描包名，子类可重写以添加更多包
+     */
+    protected String[] getHandlerScanPackages() {
+        return new String[]{"com.muyi.game.handler"};
     }
     
     /**

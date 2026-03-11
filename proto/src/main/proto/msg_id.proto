@@ -21,6 +21,8 @@ enum MsgId {
     // ==================== 玩家基础（登录、角色） 1001-1999 ====================
     PLAYER_LOGIN_REQ = 1001;
     PLAYER_LOGIN_RESP = 1002;
+    ENTER_WORLD_REQ = 1003;
+    ENTER_WORLD_RESP = 1004;
 
     // ==================== 玩家信息/背包/装备 2001-2999 ====================
     PLAYER_INFO_REQ = 2001;

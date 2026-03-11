@@ -134,6 +134,18 @@ public class GateServiceImpl implements IGateService {
     }
     
     @Override
+    public boolean bindWorldServerId(long playerId, int worldServerId) {
+        Session session = sessionManager.getSessionByPlayerId(playerId);
+        if (session == null || !session.isOnline()) {
+            log.warn("Player {} is offline, cannot bind worldServerId={}", playerId, worldServerId);
+            return false;
+        }
+        session.bindWorld(worldServerId);
+        log.info("Player {} bound to world-{}", playerId, worldServerId);
+        return true;
+    }
+
+    @Override
     public int getOnlineCount() {
         return sessionManager.getOnlinePlayerCount();
     }

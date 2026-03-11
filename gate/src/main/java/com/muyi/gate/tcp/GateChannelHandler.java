@@ -179,7 +179,7 @@ public class GateChannelHandler extends SimpleChannelInboundHandler<GamePacket> 
 
     private void forwardToWorld(GamePacket packet) {
         try {
-            IWorldService world = rpcProxy.get(IWorldService.class);
+            IWorldService world = rpcProxy.get(IWorldService.class, session.getWorldServerId());
             world.forwardMessage(
                     session.getPlayerId(), session.getGameServerId(), gateServerId,
                     packet.getMsgId(), packet.getMsgSeq(), packet.getPayload());

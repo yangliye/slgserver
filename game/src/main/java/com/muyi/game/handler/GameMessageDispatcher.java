@@ -2,6 +2,9 @@ package com.muyi.game.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import com.muyi.core.handler.HandlerScanner;
+import com.muyi.core.handler.MessageHandler;
+import com.muyi.core.module.AbstractGameModule;
 import com.muyi.game.player.PlayerExecutorManager;
 import com.muyi.proto.MessageRegistry;
 import org.slf4j.Logger;
@@ -49,12 +52,24 @@ public class GameMessageDispatcher {
     }
 
     /**
-     * 注册消息处理器
+     * 扫描并注册所有 @MsgHandler 标记的处理器
+     *
+     * @param packages 扫描包名
+     * @param module   当前模块实例
+     */
+    public void scanAndRegister(String[] packages, AbstractGameModule module) {
+        for (HandlerScanner.HandlerEntry entry : HandlerScanner.scan(packages, module)) {
+            register(entry.msgId(), entry.handler());
+        }
+    }
+
+    /**
+     * 手动注册消息处理器
      *
      * @param msgId   消息协议 ID
      * @param handler 处理逻辑
      */
-    public <T extends Message> void register(int msgId, MessageHandler<T> handler) {
+    public <T> void register(int msgId, MessageHandler<T> handler) {
         MessageHandler<?> old = handlers.putIfAbsent(msgId, handler);
         if (old != null) {
             log.warn("Duplicate handler for msgId={}", msgId);

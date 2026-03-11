@@ -41,6 +41,14 @@ public enum MsgId
    */
   PLAYER_LOGIN_RESP(1002),
   /**
+   * <code>ENTER_WORLD_REQ = 1003;</code>
+   */
+  ENTER_WORLD_REQ(1003),
+  /**
+   * <code>ENTER_WORLD_RESP = 1004;</code>
+   */
+  ENTER_WORLD_RESP(1004),
+  /**
    * <pre>
    * ==================== 玩家信息/背包/装备 2001-2999 ====================
    * </pre>
@@ -100,6 +108,14 @@ public enum MsgId
    * <code>PLAYER_LOGIN_RESP = 1002;</code>
    */
   public static final int PLAYER_LOGIN_RESP_VALUE = 1002;
+  /**
+   * <code>ENTER_WORLD_REQ = 1003;</code>
+   */
+  public static final int ENTER_WORLD_REQ_VALUE = 1003;
+  /**
+   * <code>ENTER_WORLD_RESP = 1004;</code>
+   */
+  public static final int ENTER_WORLD_RESP_VALUE = 1004;
   /**
    * <pre>
    * ==================== 玩家信息/背包/装备 2001-2999 ====================
@@ -161,6 +177,8 @@ public enum MsgId
       case 0: return MSG_ID_UNSPECIFIED;
       case 1001: return PLAYER_LOGIN_REQ;
       case 1002: return PLAYER_LOGIN_RESP;
+      case 1003: return ENTER_WORLD_REQ;
+      case 1004: return ENTER_WORLD_RESP;
       case 2001: return PLAYER_INFO_REQ;
       case 2002: return PLAYER_INFO_RESP;
       case 9001: return GATE_AUTH_REQ;

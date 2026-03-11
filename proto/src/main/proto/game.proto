@@ -30,6 +30,19 @@ message PlayerData {
     int64 createTime = 9;
 }
 
+// ==================== 进入大世界 ====================
+
+message EnterWorldReq {
+    option (msgId) = 1003;
+}
+
+message EnterWorldResp {
+    option (msgId) = 1004;
+    int32 code = 1;           // 0=成功
+    string message = 2;
+    int32 worldServerId = 3;  // 分配的 world 服务器 ID
+}
+
 // ==================== 查询玩家信息 ====================
 
 message PlayerInfoReq {

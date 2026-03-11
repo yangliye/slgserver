@@ -42,6 +42,16 @@ public final class Game extends com.google.protobuf.GeneratedFile {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_PlayerData_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_EnterWorldReq_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_EnterWorldReq_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_EnterWorldResp_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_EnterWorldResp_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
     internal_static_PlayerInfoReq_descriptor;
   static final 
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -67,10 +77,13 @@ public final class Game extends com.google.protobuf.GeneratedFile {
       "\003uid\030\001 \001(\003\022\014\n\004name\030\002 \001(\t\022\r\n\005level\030\003 \001(\005\022" +
       "\013\n\003exp\030\004 \001(\003\022\020\n\010vipLevel\030\005 \001(\005\022\014\n\004gold\030\006" +
       " \001(\003\022\017\n\007diamond\030\007 \001(\003\022\025\n\rlastLoginTime\030\010" +
-      " \001(\003\022\022\n\ncreateTime\030\t \001(\003\"\026\n\rPlayerInfoRe" +
-      "q:\005\210\303\032\321\017\"A\n\016PlayerInfoResp\022\013\n\003uid\030\001 \001(\003\022" +
-      "\014\n\004name\030\002 \001(\t\022\r\n\005level\030\003 \001(\005:\005\210\303\032\322\017B\027\n\023c" +
-      "om.muyi.proto.gameP\001b\006proto3"
+      " \001(\003\022\022\n\ncreateTime\030\t \001(\003\"\026\n\rEnterWorldRe" +
+      "q:\005\210\303\032\353\007\"M\n\016EnterWorldResp\022\014\n\004code\030\001 \001(\005" +
+      "\022\017\n\007message\030\002 \001(\t\022\025\n\rworldServerId\030\003 \001(\005" +
+      ":\005\210\303\032\354\007\"\026\n\rPlayerInfoReq:\005\210\303\032\321\017\"A\n\016Playe" +
+      "rInfoResp\022\013\n\003uid\030\001 \001(\003\022\014\n\004name\030\002 \001(\t\022\r\n\005" +
+      "level\030\003 \001(\005:\005\210\303\032\322\017B\027\n\023com.muyi.proto.gam" +
+      "eP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -95,14 +108,26 @@ public final class Game extends com.google.protobuf.GeneratedFile {
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_PlayerData_descriptor,
         new java.lang.String[] { "Uid", "Name", "Level", "Exp", "VipLevel", "Gold", "Diamond", "LastLoginTime", "CreateTime", });
-    internal_static_PlayerInfoReq_descriptor =
+    internal_static_EnterWorldReq_descriptor =
       getDescriptor().getMessageType(3);
+    internal_static_EnterWorldReq_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_EnterWorldReq_descriptor,
+        new java.lang.String[] { });
+    internal_static_EnterWorldResp_descriptor =
+      getDescriptor().getMessageType(4);
+    internal_static_EnterWorldResp_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_EnterWorldResp_descriptor,
+        new java.lang.String[] { "Code", "Message", "WorldServerId", });
+    internal_static_PlayerInfoReq_descriptor =
+      getDescriptor().getMessageType(5);
     internal_static_PlayerInfoReq_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_PlayerInfoReq_descriptor,
         new java.lang.String[] { });
     internal_static_PlayerInfoResp_descriptor =
-      getDescriptor().getMessageType(4);
+      getDescriptor().getMessageType(6);
     internal_static_PlayerInfoResp_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_PlayerInfoResp_descriptor,

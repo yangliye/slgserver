@@ -35,13 +35,14 @@ public final class MsgIdOuterClass extends com.google.protobuf.GeneratedFile {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014msg_id.proto*\327\001\n\005MsgId\022\026\n\022MSG_ID_UNSPE" +
+      "\n\014msg_id.proto*\204\002\n\005MsgId\022\026\n\022MSG_ID_UNSPE" +
       "CIFIED\020\000\022\025\n\020PLAYER_LOGIN_REQ\020\351\007\022\026\n\021PLAYE" +
-      "R_LOGIN_RESP\020\352\007\022\024\n\017PLAYER_INFO_REQ\020\321\017\022\025\n" +
-      "\020PLAYER_INFO_RESP\020\322\017\022\022\n\rGATE_AUTH_REQ\020\251F" +
-      "\022\023\n\016GATE_AUTH_RESP\020\252F\022\027\n\022GATE_HEARTBEAT_" +
-      "REQ\020\253F\022\030\n\023GATE_HEARTBEAT_RESP\020\254FB\022\n\016com." +
-      "muyi.protoP\001b\006proto3"
+      "R_LOGIN_RESP\020\352\007\022\024\n\017ENTER_WORLD_REQ\020\353\007\022\025\n" +
+      "\020ENTER_WORLD_RESP\020\354\007\022\024\n\017PLAYER_INFO_REQ\020" +
+      "\321\017\022\025\n\020PLAYER_INFO_RESP\020\322\017\022\022\n\rGATE_AUTH_R" +
+      "EQ\020\251F\022\023\n\016GATE_AUTH_RESP\020\252F\022\027\n\022GATE_HEART" +
+      "BEAT_REQ\020\253F\022\030\n\023GATE_HEARTBEAT_RESP\020\254FB\022\n" +
+      "\016com.muyi.protoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

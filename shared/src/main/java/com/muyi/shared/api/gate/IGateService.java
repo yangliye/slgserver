@@ -84,6 +84,15 @@ public interface IGateService {
     MigrationResult migratePlayer(MigrationRequest request);
 
     /**
+     * 绑定玩家的 World 服务器 ID（进入大世界时由 Game 调用）
+     *
+     * @param playerId      玩家ID
+     * @param worldServerId world 服务器 ID，传 0 表示解绑
+     * @return 是否成功
+     */
+    boolean bindWorldServerId(long playerId, int worldServerId);
+
+    /**
      * 获取在线玩家数量
      *
      * @return 在线数量

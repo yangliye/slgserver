@@ -34,6 +34,9 @@ public class Session {
     /** 当前所在 Game 服务器ID */
     private volatile int gameServerId;
     
+    /** 当前所在 World 服务器ID（进入大世界后设置） */
+    private volatile int worldServerId;
+    
     /** 联盟ID（用于联盟服务路由） */
     private volatile long allianceId;
     
@@ -139,10 +142,19 @@ public class Session {
     }
     
     /**
+     * 绑定 World 服务器（进入大世界时调用）
+     *
+     * @param worldServerId world 服务器 ID，传 0 表示解绑
+     */
+    public void bindWorld(int worldServerId) {
+        this.worldServerId = worldServerId;
+    }
+
+    /**
      * 是否可以发送消息到 World 服务器
      */
     public boolean canRouteToWorld() {
-        return canRouteToGame();
+        return canRouteToGame() && worldServerId > 0;
     }
     
     /**
@@ -202,6 +214,10 @@ public class Session {
         return gameServerId;
     }
     
+    public int getWorldServerId() {
+        return worldServerId;
+    }
+    
     public long getAllianceId() {
         return allianceId;
     }
@@ -236,6 +252,7 @@ public class Session {
                 "sessionId='" + sessionId + '\'' +
                 ", playerId=" + playerId +
                 ", gameServerId=" + gameServerId +
+                ", worldServerId=" + worldServerId +
                 ", state=" + state.get() +
                 ", clientIp='" + clientIp + '\'' +
                 '}';

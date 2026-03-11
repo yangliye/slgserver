@@ -1,10 +1,13 @@
 package com.muyi.game.handler.player;
 
 import com.muyi.common.util.time.TimeUtils;
+import com.muyi.core.handler.MessageHandler;
+import com.muyi.core.handler.MsgHandler;
+import com.muyi.core.module.AbstractGameModule;
 import com.muyi.core.module.ModuleContext;
+import com.muyi.game.GameModule;
 import com.muyi.game.playerdata.PlayerDataContext;
 import com.muyi.game.playerdata.PlayerDataRegistry;
-import com.muyi.game.handler.MessageHandler;
 import com.muyi.game.manager.HeroManager;
 import com.muyi.game.player.PlayerExecutor;
 import com.muyi.game.player.PlayerExecutorManager;
@@ -29,18 +32,19 @@ import org.slf4j.LoggerFactory;
  *     → 创建 PlayerDataContext → loadAll → onLogin → pushToGate 响应
  * </pre>
  */
+@MsgHandler(MsgId.PLAYER_LOGIN_REQ_VALUE)
 public class PlayerLoginHandler implements MessageHandler<PlayerLoginReq> {
 
     private static final Logger log = LoggerFactory.getLogger(PlayerLoginHandler.class);
 
-    private static final int RESP_MSG_ID = MsgId.PLAYER_LOGIN_RESP_VALUE;
+    private PlayerExecutorManager playerManager;
+    private PlayerDataRegistry dataRegistry;
 
-    private final PlayerExecutorManager playerManager;
-    private final PlayerDataRegistry dataRegistry;
-
-    public PlayerLoginHandler(PlayerExecutorManager playerManager, PlayerDataRegistry dataRegistry) {
-        this.playerManager = playerManager;
-        this.dataRegistry = dataRegistry;
+    @Override
+    public void init(AbstractGameModule module) {
+        GameModule game = (GameModule) module;
+        this.playerManager = game.getPlayerExecutorManager();
+        this.dataRegistry = game.getPlayerDataRegistry();
     }
 
     @Override
@@ -53,7 +57,6 @@ public class PlayerLoginHandler implements MessageHandler<PlayerLoginReq> {
 
         long startTime = TimeUtils.currentTimeMillis();
 
-        // 1. 创建数据上下文并加载所有玩家数据
         PlayerDataContext dataContext = dataRegistry.createContext(uid);
         dataContext.loadAll();
         dataContext.onLogin();
@@ -61,7 +64,6 @@ public class PlayerLoginHandler implements MessageHandler<PlayerLoginReq> {
 
         long loadCost = TimeUtils.currentTimeMillis() - startTime;
 
-        // 2. 构建登录响应（从已加载的 Manager 中读取数据）
         PlayerData playerData = buildPlayerData(uid, dataContext);
 
         PlayerLoginResp resp = PlayerLoginResp.newBuilder()
@@ -70,7 +72,7 @@ public class PlayerLoginHandler implements MessageHandler<PlayerLoginReq> {
                 .setPlayerData(playerData)
                 .build();
 
-        executor.pushToGate(RESP_MSG_ID, resp.toByteArray());
+        executor.pushToGate(MsgId.PLAYER_LOGIN_RESP_VALUE, resp.toByteArray());
 
         HeroManager heroMgr = dataContext.getManager(HeroManager.class);
         log.info("Player[{}] entered game, heroes={}, loadCost={}ms, module={}-{}",
@@ -78,9 +80,6 @@ public class PlayerLoginHandler implements MessageHandler<PlayerLoginReq> {
                 ModuleContext.current().name(), ModuleContext.current().getServerId());
     }
 
-    /**
-     * 从玩家数据上下文构建 Protobuf 响应
-     */
     private PlayerData buildPlayerData(long uid, PlayerDataContext dataContext) {
         // TODO: 从各 Manager 收集数据构建完整的 PlayerData proto
         long now = TimeUtils.currentTimeMillis();
