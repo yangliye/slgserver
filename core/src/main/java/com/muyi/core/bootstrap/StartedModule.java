@@ -1,6 +1,6 @@
 package com.muyi.core.bootstrap;
 
-import com.muyi.core.module.GameModule;
+import com.muyi.core.module.ServerModule;
 
 /**
  * 已启动的模块信息
@@ -10,9 +10,9 @@ import com.muyi.core.module.GameModule;
 class StartedModule {
     
     final String instanceId;
-    final GameModule module;
+    final ServerModule module;
     
-    StartedModule(String instanceId, GameModule module) {
+    StartedModule(String instanceId, ServerModule module) {
         this.instanceId = instanceId;
         this.module = module;
     }

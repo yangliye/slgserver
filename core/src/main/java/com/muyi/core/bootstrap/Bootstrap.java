@@ -5,7 +5,7 @@ import com.muyi.common.util.log.GameLog;
 import com.muyi.core.config.ModuleConfig;
 import com.muyi.core.config.InstanceConfig;
 import com.muyi.core.config.ServerConfig;
-import com.muyi.core.module.GameModule;
+import com.muyi.core.module.ServerModule;
 import com.muyi.rpc.transport.SharedEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +91,8 @@ public class Bootstrap {
         // 按模块优先级排序后启动（priority 越小越先启动）
         List<InstanceConfig> sortedInstances = new ArrayList<>(serverConfig.getInstances());
         sortedInstances.sort((a, b) -> {
-            GameModule ma = registry.get(a.module);
-            GameModule mb = registry.get(b.module);
+            ServerModule ma = registry.get(a.module);
+            ServerModule mb = registry.get(b.module);
             int pa = ma != null ? ma.priority() : Integer.MAX_VALUE;
             int pb = mb != null ? mb.priority() : Integer.MAX_VALUE;
             return Integer.compare(pa, pb);
@@ -117,14 +117,14 @@ public class Bootstrap {
      * 启动单个实例
      */
     private void startInstance(InstanceConfig instance) throws Exception {
-        GameModule module = registry.get(instance.module);
+        ServerModule module = registry.get(instance.module);
         if (module == null) {
             log.warn("Module not found: {}", instance.module);
             return;
         }
         
         // 为每个实例创建新的模块实例
-        GameModule moduleInstance = module.getClass().getDeclaredConstructor().newInstance();
+        ServerModule moduleInstance = module.getClass().getDeclaredConstructor().newInstance();
         ModuleConfig config = serverConfig.getModuleConfig(instance);
         
         String instanceId = instance.getInstanceId();

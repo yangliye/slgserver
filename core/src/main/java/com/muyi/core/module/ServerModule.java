@@ -3,12 +3,12 @@ package com.muyi.core.module;
 import com.muyi.core.config.ModuleConfig;
 
 /**
- * 游戏模块接口
- * 所有业务模块（login、gate、game、world、alliance）都需要实现此接口
+ * 服务器模块接口
+ * 所有业务模块（login、gate、game、world、alliance 等）都需要实现此接口
  *
  * @author muyi
  */
-public interface GameModule {
+public interface ServerModule {
     
     /**
      * 模块名称（唯一标识）

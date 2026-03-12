@@ -1,7 +1,7 @@
 package com.muyi.config;
 
 import com.muyi.core.config.ModuleConfig;
-import com.muyi.core.module.GameModule;
+import com.muyi.core.module.ServerModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author muyi
  */
-public class ConfigModule implements GameModule {
+public class ConfigModule implements ServerModule {
     
     private static final Logger log = LoggerFactory.getLogger(ConfigModule.class);
     

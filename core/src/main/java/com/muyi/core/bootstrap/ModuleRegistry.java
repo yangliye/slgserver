@@ -1,6 +1,6 @@
 package com.muyi.core.bootstrap;
 
-import com.muyi.core.module.GameModule;
+import com.muyi.core.module.ServerModule;
 
 import java.util.Collection;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class ModuleRegistry {
     private static final ModuleRegistry INSTANCE = new ModuleRegistry();
     
     /** 已注册的模块 */
-    private final Map<String, GameModule> modules = new ConcurrentHashMap<>();
+    private final Map<String, ServerModule> modules = new ConcurrentHashMap<>();
     
     private ModuleRegistry() {
     }
@@ -30,8 +30,8 @@ public class ModuleRegistry {
     /**
      * 注册模块（原子操作，防止重复注册）
      */
-    public void register(GameModule module) {
-        GameModule existing = modules.putIfAbsent(module.name(), module);
+    public void register(ServerModule module) {
+        ServerModule existing = modules.putIfAbsent(module.name(), module);
         if (existing != null) {
             throw new IllegalStateException("Module already registered: " + module.name());
         }
@@ -40,14 +40,14 @@ public class ModuleRegistry {
     /**
      * 获取模块
      */
-    public GameModule get(String name) {
+    public ServerModule get(String name) {
         return modules.get(name);
     }
     
     /**
      * 获取所有模块
      */
-    public Collection<GameModule> getAll() {
+    public Collection<ServerModule> getAll() {
         return modules.values();
     }
     
@@ -61,7 +61,7 @@ public class ModuleRegistry {
     /**
      * 移除模块
      */
-    public GameModule remove(String name) {
+    public ServerModule remove(String name) {
         return modules.remove(name);
     }
     
@@ -76,8 +76,8 @@ public class ModuleRegistry {
      * 通过 SPI 自动发现并注册模块
      */
     public void discoverModules() {
-        ServiceLoader<GameModule> loader = ServiceLoader.load(GameModule.class);
-        for (GameModule module : loader) {
+        ServiceLoader<ServerModule> loader = ServiceLoader.load(ServerModule.class);
+        for (ServerModule module : loader) {
             if (!contains(module.name())) {
                 register(module);
             }

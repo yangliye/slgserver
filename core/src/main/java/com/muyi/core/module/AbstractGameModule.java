@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author muyi
  */
-public abstract class AbstractGameModule implements GameModule {
+public abstract class AbstractGameModule implements ServerModule {
     
     protected final Logger log = LoggerFactory.getLogger(getClass());
     
